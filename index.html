@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Moonrise Coffee — Great Coffee Without the Snobbery</title>
+  <style>
+    *,
+    *::before,
+    *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --color-cream: #fdf6ec;
+      --color-dark: #1a1207;
+      --color-brown: #5c3d2e;
+      --color-warm: #c8875a;
+      --color-gold: #d4a04a;
+      --color-light-brown: #e8d5c0;
+      --color-text: #3a2a1a;
+      --color-text-light: #7a6a5a;
+      --color-white: #ffffff;
+      --font-heading: Georgia, "Times New Roman", serif;
+      --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --max-width: 1120px;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: var(--font-body);
+      color: var(--color-text);
+      background: var(--color-cream);
+      line-height: 1.6;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: rgba(26, 18, 7, 0.95);
+      backdrop-filter: blur(8px);
+      padding: 0 2rem;
+    }
+
+    .nav-inner {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+
+    .logo {
+      font-family: var(--font-heading);
+      font-size: 1.35rem;
+      color: var(--color-cream);
+      text-decoration: none;
+      letter-spacing: 0.02em;
+    }
+
+    .logo span {
+      color: var(--color-gold);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--color-light-brown);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--color-gold);
+    }
+
+    .nav-toggle {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    .nav-toggle span {
+      display: block;
+      width: 24px;
+      height: 2px;
+      background: var(--color-cream);
+      margin: 5px 0;
+      transition: 0.3s;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 6rem 2rem 4rem;
+      background:
+        linear-gradient(160deg, var(--color-dark) 0%, #2a1f10 50%, #3d2a14 100%);
+      color: var(--color-cream);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      top: -50%;
+      right: -30%;
+      width: 80%;
+      height: 180%;
+      background: radial-gradient(ellipse, rgba(212, 160, 74, 0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-content {
+      max-width: 720px;
+      position: relative;
+    }
+
+    .hero-tagline {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.25em;
+      color: var(--color-gold);
+      margin-bottom: 1.5rem;
+    }
+
+    .hero h1 {
+      font-family: var(--font-heading);
+      font-size: clamp(2.5rem, 6vw, 4.2rem);
+      line-height: 1.15;
+      margin-bottom: 1.5rem;
+      font-weight: 400;
+    }
+
+    .hero p {
+      font-size: 1.15rem;
+      color: var(--color-light-brown);
+      margin-bottom: 2.5rem;
+      max-width: 540px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 1rem 2.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+      border-radius: 4px;
+      transition: all 0.25s;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--color-gold);
+      color: var(--color-dark);
+    }
+
+    .btn-primary:hover {
+      background: #e0b05a;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--color-gold);
+      border: 2px solid var(--color-gold);
+    }
+
+    .btn-secondary:hover {
+      background: var(--color-gold);
+      color: var(--color-dark);
+    }
+
+    /* ── SECTIONS ── */
+    section {
+      padding: 6rem 2rem;
+    }
+
+    .section-inner {
+      max-width: var(--max-width);
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--color-warm);
+      margin-bottom: 0.75rem;
+    }
+
+    .section-title {
+      font-family: var(--font-heading);
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      margin-bottom: 1rem;
+      font-weight: 400;
+    }
+
+    .section-subtitle {
+      color: var(--color-text-light);
+      max-width: 560px;
+      margin-bottom: 3.5rem;
+      font-size: 1.05rem;
+    }
+
+    .section-subtitle.centered {
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .text-center {
+      text-align: center;
+    }
+
+    /* ── HOW IT WORKS ── */
+    .how-it-works {
+      background: var(--color-white);
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2.5rem;
+    }
+
+    .step {
+      text-align: center;
+      padding: 2rem 1.5rem;
+    }
+
+    .step-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--color-dark);
+      color: var(--color-gold);
+      font-family: var(--font-heading);
+      font-size: 1.4rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .step h3 {
+      font-family: var(--font-heading);
+      font-size: 1.3rem;
+      margin-bottom: 0.75rem;
+      font-weight: 400;
+    }
+
+    .step p {
+      color: var(--color-text-light);
+      font-size: 0.95rem;
+    }
+
+    .step-divider {
+      display: none;
+    }
+
+    /* ── COFFEE SELECTION ── */
+    .coffees {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+    }
+
+    .coffee-card {
+      background: var(--color-white);
+      border-radius: 8px;
+      overflow: hidden;
+      transition: transform 0.25s, box-shadow 0.25s;
+    }
+
+    .coffee-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(26, 18, 7, 0.1);
+    }
+
+    .coffee-img {
+      height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 4rem;
+      position: relative;
+    }
+
+    .coffee-img.ethiopia {
+      background: linear-gradient(135deg, #6b4423, #8b6240);
+    }
+
+    .coffee-img.colombia {
+      background: linear-gradient(135deg, #5c3d2e, #7a5a45);
+    }
+
+    .coffee-img.guatemala {
+      background: linear-gradient(135deg, #4a3020, #684830);
+    }
+
+    .coffee-origin-badge {
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+      background: rgba(0, 0, 0, 0.4);
+      color: var(--color-cream);
+      padding: 0.3rem 0.75rem;
+      border-radius: 3px;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .coffee-body {
+      padding: 1.75rem;
+    }
+
+    .coffee-body h3 {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      margin-bottom: 0.25rem;
+      font-weight: 400;
+    }
+
+    .coffee-region {
+      font-size: 0.85rem;
+      color: var(--color-warm);
+      margin-bottom: 1rem;
+    }
+
+    .coffee-body p {
+      font-size: 0.95rem;
+      color: var(--color-text-light);
+      margin-bottom: 1rem;
+    }
+
+    .flavor-notes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .flavor-note {
+      background: var(--color-cream);
+      color: var(--color-brown);
+      padding: 0.3rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+    }
+
+    /* ── PRICING ── */
+    .pricing-section {
+      background: var(--color-dark);
+      color: var(--color-cream);
+    }
+
+    .pricing-section .section-label {
+      color: var(--color-gold);
+    }
+
+    .pricing-section .section-subtitle {
+      color: var(--color-light-brown);
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+      align-items: start;
+    }
+
+    .pricing-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 2.5rem 2rem;
+      text-align: center;
+      transition: transform 0.25s;
+    }
+
+    .pricing-card:hover {
+      transform: translateY(-4px);
+    }
+
+    .pricing-card.featured {
+      background: rgba(212, 160, 74, 0.1);
+      border-color: var(--color-gold);
+      position: relative;
+    }
+
+    .popular-badge {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--color-gold);
+      color: var(--color-dark);
+      padding: 0.25rem 1rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .pricing-card h3 {
+      font-family: var(--font-heading);
+      font-size: 1.35rem;
+      margin-bottom: 0.5rem;
+      font-weight: 400;
+    }
+
+    .price {
+      font-size: 2.8rem;
+      font-weight: 700;
+      margin: 1rem 0 0.25rem;
+    }
+
+    .price span {
+      font-size: 1rem;
+      font-weight: 400;
+      color: var(--color-text-light);
+    }
+
+    .pricing-card .price span {
+      color: var(--color-light-brown);
+    }
+
+    .pricing-desc {
+      color: var(--color-light-brown);
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .pricing-features {
+      list-style: none;
+      text-align: left;
+      margin-bottom: 2rem;
+    }
+
+    .pricing-features li {
+      padding: 0.5rem 0;
+      font-size: 0.9rem;
+      color: var(--color-light-brown);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .pricing-features li::before {
+      content: "\2713";
+      color: var(--color-gold);
+      margin-right: 0.75rem;
+      font-weight: 700;
+    }
+
+    .pricing-card .btn {
+      width: 100%;
+      text-align: center;
+    }
+
+    /* ── TESTIMONIALS ── */
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+    }
+
+    .testimonial {
+      background: var(--color-white);
+      border-radius: 8px;
+      padding: 2rem;
+    }
+
+    .stars {
+      color: var(--color-gold);
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      letter-spacing: 0.1em;
+    }
+
+    .testimonial blockquote {
+      font-size: 1rem;
+      line-height: 1.7;
+      color: var(--color-text);
+      margin-bottom: 1.5rem;
+      font-style: italic;
+    }
+
+    .testimonial-author {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .author-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--color-light-brown);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--color-brown);
+    }
+
+    .author-name {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .author-detail {
+      font-size: 0.8rem;
+      color: var(--color-text-light);
+    }
+
+    /* ── FAQ ── */
+    .faq-section {
+      background: var(--color-white);
+    }
+
+    .faq-list {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .faq-item {
+      border-bottom: 1px solid var(--color-light-brown);
+    }
+
+    .faq-question {
+      width: 100%;
+      background: none;
+      border: none;
+      padding: 1.5rem 0;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--color-text);
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-body);
+    }
+
+    .faq-question:hover {
+      color: var(--color-brown);
+    }
+
+    .faq-icon {
+      font-size: 1.4rem;
+      transition: transform 0.3s;
+      color: var(--color-warm);
+      flex-shrink: 0;
+      margin-left: 1rem;
+    }
+
+    .faq-item.open .faq-icon {
+      transform: rotate(45deg);
+    }
+
+    .faq-answer {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.35s ease, padding 0.35s ease;
+    }
+
+    .faq-item.open .faq-answer {
+      max-height: 200px;
+    }
+
+    .faq-answer p {
+      padding-bottom: 1.5rem;
+      color: var(--color-text-light);
+      font-size: 0.95rem;
+      line-height: 1.7;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--color-dark);
+      color: var(--color-light-brown);
+      padding: 5rem 2rem 2rem;
+    }
+
+    .footer-inner {
+      max-width: var(--max-width);
+      margin: 0 auto;
+    }
+
+    .footer-top {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr 1fr 1.5fr;
+      gap: 3rem;
+      padding-bottom: 3rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .footer-brand .logo {
+      font-size: 1.5rem;
+      display: inline-block;
+      margin-bottom: 1rem;
+    }
+
+    .footer-brand p {
+      font-size: 0.9rem;
+      line-height: 1.7;
+      color: var(--color-text-light);
+    }
+
+    .footer-col h4 {
+      color: var(--color-cream);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 1.25rem;
+    }
+
+    .footer-col ul {
+      list-style: none;
+    }
+
+    .footer-col li {
+      margin-bottom: 0.6rem;
+    }
+
+    .footer-col a {
+      color: var(--color-text-light);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+
+    .footer-col a:hover {
+      color: var(--color-gold);
+    }
+
+    .newsletter h4 {
+      color: var(--color-cream);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.75rem;
+    }
+
+    .newsletter p {
+      font-size: 0.9rem;
+      color: var(--color-text-light);
+      margin-bottom: 1.25rem;
+    }
+
+    .newsletter-form {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .newsletter-form input {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--color-cream);
+      font-size: 0.9rem;
+      font-family: var(--font-body);
+    }
+
+    .newsletter-form input::placeholder {
+      color: var(--color-text-light);
+    }
+
+    .newsletter-form input:focus {
+      outline: none;
+      border-color: var(--color-gold);
+    }
+
+    .newsletter-form button {
+      padding: 0.75rem 1.25rem;
+      background: var(--color-gold);
+      color: var(--color-dark);
+      border: none;
+      border-radius: 4px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.9rem;
+      white-space: nowrap;
+      transition: background 0.2s;
+    }
+
+    .newsletter-form button:hover {
+      background: #e0b05a;
+    }
+
+    .footer-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 2rem;
+      font-size: 0.8rem;
+      color: var(--color-text-light);
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .steps,
+      .coffees,
+      .pricing-grid,
+      .testimonials-grid {
+        grid-template-columns: 1fr;
+        max-width: 480px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .footer-top {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .nav-links {
+        display: none;
+        position: absolute;
+        top: 64px;
+        left: 0;
+        right: 0;
+        background: rgba(26, 18, 7, 0.98);
+        flex-direction: column;
+        padding: 1rem 2rem 1.5rem;
+        gap: 1rem;
+      }
+
+      .nav-links.open {
+        display: flex;
+      }
+
+      .nav-toggle {
+        display: block;
+      }
+
+      .hero {
+        padding: 7rem 1.5rem 4rem;
+      }
+
+      section {
+        padding: 4rem 1.5rem;
+      }
+
+      .footer-bottom {
+        flex-direction: column;
+        gap: 0.75rem;
+        text-align: center;
+      }
+
+      .newsletter-form {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-inner">
+      <a href="#" class="logo">Moonrise <span>Coffee</span></a>
+      <ul class="nav-links" id="navLinks">
+        <li><a href="#how-it-works">How It Works</a></li>
+        <li><a href="#coffees">Our Coffees</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+        <li><a href="#faq">FAQ</a></li>
+        <li><a href="#pricing" class="btn btn-primary" style="padding:0.5rem 1.25rem;font-size:0.85rem;">Subscribe</a></li>
+      </ul>
+      <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-content">
+      <p class="hero-tagline">Portland, Oregon &middot; Est. 2021</p>
+      <h1>Great Coffee,<br>Without the Snobbery</h1>
+      <p>Single-origin beans from small farms, roasted in small batches, and delivered to your door every week. Just really good coffee.</p>
+      <a href="#pricing" class="btn btn-primary">Start Your Subscription</a>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="how-it-works" id="how-it-works">
+    <div class="section-inner text-center">
+      <p class="section-label">How It Works</p>
+      <h2 class="section-title">Three Steps to Better Mornings</h2>
+      <p class="section-subtitle centered">No commitments, no contracts. Just fresh coffee showing up when you need it.</p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-number">1</div>
+          <h3>Pick Your Beans</h3>
+          <p>Choose from our rotating selection of single-origin coffees sourced from Ethiopia, Colombia, and Guatemala.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <h3>We Roast to Order</h3>
+          <p>Your beans are roasted in small batches the same week they ship &mdash; never sitting on a shelf.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <h3>You Enjoy</h3>
+          <p>Fresh coffee arrives at your door weekly. Brew however you like &mdash; we don&rsquo;t judge.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COFFEE SELECTION -->
+  <section id="coffees">
+    <div class="section-inner">
+      <p class="section-label">Our Coffees</p>
+      <h2 class="section-title">What's Roasting Right Now</h2>
+      <p class="section-subtitle">We work directly with small farms to source beans that actually taste like something.</p>
+      <div class="coffees">
+        <div class="coffee-card">
+          <div class="coffee-img ethiopia">
+            <span class="coffee-origin-badge">Ethiopia</span>
+          </div>
+          <div class="coffee-body">
+            <h3>Yirgacheffe Sunrise</h3>
+            <p class="coffee-region">Gedeo Zone, Ethiopia</p>
+            <p>A bright and floral cup with a clean finish. The kind of coffee that makes you pause mid-sip.</p>
+            <div class="flavor-notes">
+              <span class="flavor-note">Blueberry</span>
+              <span class="flavor-note">Jasmine</span>
+              <span class="flavor-note">Lemon Zest</span>
+            </div>
+          </div>
+        </div>
+        <div class="coffee-card">
+          <div class="coffee-img colombia">
+            <span class="coffee-origin-badge">Colombia</span>
+          </div>
+          <div class="coffee-body">
+            <h3>Huila Gold</h3>
+            <p class="coffee-region">Huila, Colombia</p>
+            <p>Rich and balanced with a caramel sweetness. A crowd-pleaser that works in any brew method.</p>
+            <div class="flavor-notes">
+              <span class="flavor-note">Caramel</span>
+              <span class="flavor-note">Red Apple</span>
+              <span class="flavor-note">Chocolate</span>
+            </div>
+          </div>
+        </div>
+        <div class="coffee-card">
+          <div class="coffee-img guatemala">
+            <span class="coffee-origin-badge">Guatemala</span>
+          </div>
+          <div class="coffee-body">
+            <h3>Antigua Dusk</h3>
+            <p class="coffee-region">Antigua Valley, Guatemala</p>
+            <p>Full-bodied with a smoky sweetness and a long, warm finish. Made for slow weekend mornings.</p>
+            <div class="flavor-notes">
+              <span class="flavor-note">Dark Chocolate</span>
+              <span class="flavor-note">Toasted Almond</span>
+              <span class="flavor-note">Brown Sugar</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section class="pricing-section" id="pricing">
+    <div class="section-inner text-center">
+      <p class="section-label">Pricing</p>
+      <h2 class="section-title">Find Your Frequency</h2>
+      <p class="section-subtitle centered">All plans include free shipping and the freedom to cancel anytime. No strings attached.</p>
+      <div class="pricing-grid">
+        <div class="pricing-card">
+          <h3>Starter</h3>
+          <div class="price">$14<span>/mo</span></div>
+          <p class="pricing-desc">For the casual sipper</p>
+          <ul class="pricing-features">
+            <li>1 bag per month (12 oz)</li>
+            <li>Choose your roast</li>
+            <li>Free shipping</li>
+            <li>Cancel anytime</li>
+          </ul>
+          <a href="#" class="btn btn-secondary">Get Started</a>
+        </div>
+        <div class="pricing-card featured">
+          <span class="popular-badge">Most Popular</span>
+          <h3>Regular</h3>
+          <div class="price">$24<span>/mo</span></div>
+          <p class="pricing-desc">For the daily drinker</p>
+          <ul class="pricing-features">
+            <li>2 bags per month (12 oz each)</li>
+            <li>Choose your roasts</li>
+            <li>Free shipping</li>
+            <li>Early access to new beans</li>
+            <li>Cancel anytime</li>
+          </ul>
+          <a href="#" class="btn btn-primary">Get Started</a>
+        </div>
+        <div class="pricing-card">
+          <h3>Obsessed</h3>
+          <div class="price">$38<span>/mo</span></div>
+          <p class="pricing-desc">For the true enthusiast</p>
+          <ul class="pricing-features">
+            <li>3 bags per month (12 oz each)</li>
+            <li>All roast access</li>
+            <li>Free express shipping</li>
+            <li>Exclusive micro-lots</li>
+            <li>Brewing tips newsletter</li>
+            <li>Cancel anytime</li>
+          </ul>
+          <a href="#" class="btn btn-secondary">Get Started</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIALS -->
+  <section id="testimonials">
+    <div class="section-inner text-center">
+      <p class="section-label">Testimonials</p>
+      <h2 class="section-title">What Our Subscribers Say</h2>
+      <p class="section-subtitle centered">Real people, real mornings, really good coffee.</p>
+      <div class="testimonials-grid">
+        <div class="testimonial">
+          <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <blockquote>&ldquo;I used to think good coffee had to come with a lecture about tasting notes. Moonrise just sends me amazing beans and lets me enjoy them. It&rsquo;s the best part of my morning.&rdquo;</blockquote>
+          <div class="testimonial-author">
+            <div class="author-avatar">SL</div>
+            <div>
+              <div class="author-name">Sarah L.</div>
+              <div class="author-detail">Regular plan &middot; 8 months</div>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial">
+          <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <blockquote>&ldquo;The Yirgacheffe Sunrise is unreal. I&rsquo;ve tried a lot of subscription services and Moonrise is the only one I&rsquo;ve stuck with. The quality is just consistently great.&rdquo;</blockquote>
+          <div class="testimonial-author">
+            <div class="author-avatar">MR</div>
+            <div>
+              <div class="author-name">Marcus R.</div>
+              <div class="author-detail">Obsessed plan &middot; 1 year</div>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial">
+          <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <blockquote>&ldquo;Bought the Starter plan as a gift for my partner and now we&rsquo;re both on the Regular plan. The Huila Gold is our weekend ritual. Thank you, Moonrise!&rdquo;</blockquote>
+          <div class="testimonial-author">
+            <div class="author-avatar">JT</div>
+            <div>
+              <div class="author-name">Jamie T.</div>
+              <div class="author-detail">Regular plan &middot; 5 months</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="faq-section" id="faq">
+    <div class="section-inner text-center">
+      <p class="section-label">FAQ</p>
+      <h2 class="section-title">Questions? We&rsquo;ve Got Answers</h2>
+      <p class="section-subtitle centered">And if we don&rsquo;t, just drop us a line.</p>
+      <div class="faq-list">
+        <div class="faq-item">
+          <button class="faq-question">
+            How fresh is the coffee when it arrives?
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer">
+            <p>We roast your beans the same week they ship, so they arrive within days of roasting. You&rsquo;ll always have the freshest coffee possible &mdash; no shelf-sitting warehouse beans here.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question">
+            Can I change my coffee selection?
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer">
+            <p>Absolutely. You can swap your beans, change your roast preference, or try something new before each shipment. Just update your choices in your account anytime before the weekly cutoff.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question">
+            What if I need to skip a week?
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer">
+            <p>No problem at all. You can skip, pause, or cancel your subscription anytime from your account. No fees, no guilt trips &mdash; we&rsquo;ll be here when you&rsquo;re ready.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question">
+            Do you offer whole bean and ground options?
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer">
+            <p>Yes! Every order lets you choose whole bean or one of several grind options (drip, espresso, French press, pour-over). We&rsquo;ll grind it fresh right before shipping.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question">
+            Where do you ship?
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-answer">
+            <p>We currently ship throughout the continental United States with free standard shipping on all plans. The Obsessed plan includes free express shipping for even faster delivery.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <a href="#" class="logo">Moonrise <span>Coffee</span></a>
+          <p>Small-batch, single-origin coffee roasted in Portland, Oregon. Founded by two former baristas who believe great coffee should be for everyone.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <ul>
+            <li><a href="#">Our Story</a></li>
+            <li><a href="#">Sourcing</a></li>
+            <li><a href="#">Roasting Process</a></li>
+            <li><a href="#">Careers</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Support</h4>
+          <ul>
+            <li><a href="#">Help Center</a></li>
+            <li><a href="#">Shipping Info</a></li>
+            <li><a href="#">Returns</a></li>
+            <li><a href="#">Contact Us</a></li>
+          </ul>
+        </div>
+        <div class="newsletter">
+          <h4>Stay in the Loop</h4>
+          <p>Brewing tips, new roasts, and the occasional bad coffee pun. No spam, ever.</p>
+          <form class="newsletter-form" id="newsletterForm">
+            <input type="email" placeholder="you@example.com" aria-label="Email address" required>
+            <button type="submit">Subscribe</button>
+          </form>
+          <p id="newsletterMsg" style="margin-top:0.75rem;font-size:0.85rem;display:none;"></p>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 Moonrise Coffee Co. All rights reserved.</p>
+        <p>
+          <a href="#" style="color:var(--color-text-light);text-decoration:none;">Privacy</a> &middot;
+          <a href="#" style="color:var(--color-text-light);text-decoration:none;">Terms</a>
+        </p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Mobile nav toggle
+    document.getElementById('navToggle').addEventListener('click', function () {
+      document.getElementById('navLinks').classList.toggle('open');
+    });
+
+    // Close mobile nav on link click
+    document.querySelectorAll('#navLinks a').forEach(function (link) {
+      link.addEventListener('click', function () {
+        document.getElementById('navLinks').classList.remove('open');
+      });
+    });
+
+    // FAQ accordion
+    document.querySelectorAll('.faq-question').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var item = this.parentElement;
+        var isOpen = item.classList.contains('open');
+        document.querySelectorAll('.faq-item').forEach(function (el) {
+          el.classList.remove('open');
+        });
+        if (!isOpen) {
+          item.classList.add('open');
+        }
+      });
+    });
+
+    // Newsletter form
+    document.getElementById('newsletterForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var msg = document.getElementById('newsletterMsg');
+      msg.textContent = 'Thanks for subscribing! Check your inbox soon.';
+      msg.style.color = '#d4a04a';
+      msg.style.display = 'block';
+      this.reset();
+    });
+  </script>
+
+</body>
+</html>
