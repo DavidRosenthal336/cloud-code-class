@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  @apply bg-slate-50 text-slate-ink font-sans antialiased;
+}
+
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+@layer components {
+  .rvc-card {
+    @apply bg-white border border-slate-200 rounded-md shadow-sm;
+  }
+  .rvc-input {
+    @apply w-full px-3 py-2 border border-slate-300 rounded-md text-sm
+           focus:outline-none focus:ring-2 focus:ring-navy focus:border-navy
+           bg-white text-slate-ink;
+  }
+  .rvc-label {
+    @apply block text-xs font-semibold uppercase tracking-wide text-slate-600 mb-1;
+  }
+  .rvc-btn-primary {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-md
+           bg-navy text-white text-sm font-medium
+           hover:bg-navy-soft transition-colors
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .rvc-btn-secondary {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-md
+           border border-navy text-navy text-sm font-medium
+           hover:bg-navy hover:text-white transition-colors
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+}
