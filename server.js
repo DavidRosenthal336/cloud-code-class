@@ -1,5 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
+import cookieParser from 'cookie-parser';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import Anthropic from '@anthropic-ai/sdk';
@@ -8,14 +10,83 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProd = process.env.NODE_ENV === 'production';
 const port = Number(process.env.PORT) || 3001;
 
+const APP_PASSWORD = process.env.APP_PASSWORD || '';
+const SESSION_SECRET =
+  process.env.SESSION_SECRET ||
+  (isProd ? '' : 'dev-only-insecure-session-secret-change-in-prod');
+const SESSION_COOKIE = 'rvc_session';
+const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
 const app = express();
 app.use(express.json({ limit: '1mb' }));
+app.use(cookieParser());
 
 const anthropic = process.env.ANTHROPIC_API_KEY
   ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
   : null;
 
-app.post('/api/generate-memo', async (req, res) => {
+function signSession(expiresAt) {
+  const payload = String(expiresAt);
+  const sig = crypto.createHmac('sha256', SESSION_SECRET).update(payload).digest('hex');
+  return `${payload}.${sig}`;
+}
+
+function verifySession(token) {
+  if (!token || !SESSION_SECRET) return false;
+  const dot = token.indexOf('.');
+  if (dot < 0) return false;
+  const payload = token.slice(0, dot);
+  const sig = token.slice(dot + 1);
+  const expected = crypto.createHmac('sha256', SESSION_SECRET).update(payload).digest('hex');
+  if (sig.length !== expected.length) return false;
+  if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return false;
+  const expiresAt = Number(payload);
+  if (!Number.isFinite(expiresAt) || expiresAt < Date.now()) return false;
+  return true;
+}
+
+function authBypassed() {
+  return !APP_PASSWORD;
+}
+
+function isAuthed(req) {
+  if (authBypassed()) return true;
+  return verifySession(req.cookies?.[SESSION_COOKIE]);
+}
+
+function requireAuth(req, res, next) {
+  if (isAuthed(req)) return next();
+  return res.status(401).json({ error: 'Authentication required.' });
+}
+
+app.get('/api/session', (req, res) => {
+  res.json({ authenticated: isAuthed(req), authRequired: !authBypassed() });
+});
+
+app.post('/api/login', (req, res) => {
+  if (authBypassed()) return res.json({ ok: true });
+  const { password } = req.body || {};
+  if (typeof password !== 'string' || password !== APP_PASSWORD) {
+    return res.status(401).json({ error: 'Incorrect password.' });
+  }
+  const expiresAt = Date.now() + SESSION_TTL_MS;
+  const token = signSession(expiresAt);
+  res.cookie(SESSION_COOKIE, token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: isProd,
+    maxAge: SESSION_TTL_MS,
+    path: '/',
+  });
+  res.json({ ok: true });
+});
+
+app.post('/api/logout', (req, res) => {
+  res.clearCookie(SESSION_COOKIE, { path: '/' });
+  res.json({ ok: true });
+});
+
+app.post('/api/generate-memo', requireAuth, async (req, res) => {
   if (!anthropic) {
     return res.status(500).json({
       error: 'ANTHROPIC_API_KEY not configured. Copy .env.example to .env and set the key.',

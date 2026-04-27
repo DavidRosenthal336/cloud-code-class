@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Header from './components/Header.jsx';
 import DealForm from './components/DealForm.jsx';
 import KeyMetrics from './components/KeyMetrics.jsx';
@@ -7,6 +7,7 @@ import ProjectionsChart from './components/ProjectionsChart.jsx';
 import SensitivityTable from './components/SensitivityTable.jsx';
 import MemoSection from './components/MemoSection.jsx';
 import ExportButton from './components/ExportButton.jsx';
+import LoginScreen from './components/LoginScreen.jsx';
 import { runUnderwrite, capRate, effectiveGrossIncome, operatingExpenses } from './lib/financials.js';
 
 const DEFAULT_DEAL = {
@@ -41,6 +42,25 @@ const DEFAULT_DEAL = {
 export default function App() {
   const [deal, setDeal] = useState(DEFAULT_DEAL);
   const [memo, setMemo] = useState('');
+  const [auth, setAuth] = useState({ status: 'loading', authRequired: true });
+
+  useEffect(() => {
+    fetch('/api/session')
+      .then((r) => r.json())
+      .then((d) =>
+        setAuth({
+          status: d.authenticated ? 'authed' : 'login',
+          authRequired: d.authRequired,
+        })
+      )
+      .catch(() => setAuth({ status: 'login', authRequired: true }));
+  }, []);
+
+  const onSignOut = async () => {
+    await fetch('/api/logout', { method: 'POST' });
+    setAuth({ status: 'login', authRequired: true });
+    setMemo('');
+  };
 
   const result = useMemo(() => runUnderwrite(deal), [deal]);
 
@@ -52,9 +72,25 @@ export default function App() {
     return capRate(noiY1, deal.askingPrice) + 0.005;
   }, [deal]);
 
+  if (auth.status === 'loading') {
+    return (
+      <div className="min-h-screen bg-navy-deep flex items-center justify-center">
+        <div className="text-gold-soft text-sm uppercase tracking-[0.3em]">Loading…</div>
+      </div>
+    );
+  }
+
+  if (auth.status === 'login') {
+    return (
+      <LoginScreen
+        onAuthenticated={() => setAuth({ status: 'authed', authRequired: true })}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
+      <Header showSignOut={auth.authRequired} onSignOut={onSignOut} />
       <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-5">
