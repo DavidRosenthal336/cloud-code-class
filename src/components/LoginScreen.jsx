@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Logo from './Logo.jsx';
 
 export default function LoginScreen({ onAuthenticated }) {
   const [password, setPassword] = useState('');
@@ -26,11 +27,11 @@ export default function LoginScreen({ onAuthenticated }) {
   };
 
   return (
-    <div className="min-h-screen bg-navy-deep flex items-center justify-center px-4">
+    <div className="min-h-screen bg-navy flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="font-serif text-4xl text-white tracking-wide">Rose Valley Capital</h1>
-          <p className="text-xs uppercase tracking-[0.3em] text-gold-soft mt-2">
+        <div className="text-center mb-10">
+          <Logo className="h-20 w-auto mx-auto text-slate-300" />
+          <p className="text-xs uppercase tracking-[0.3em] text-slate-400 mt-4">
             Deal Underwriting
           </p>
         </div>
