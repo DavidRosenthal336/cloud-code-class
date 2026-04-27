@@ -29,13 +29,17 @@ export default function LoginScreen({ onAuthenticated }) {
   return (
     <div className="min-h-screen bg-navy flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-10">
-          <Logo className="h-20 w-auto mx-auto text-slate-300" />
-          <p className="text-xs uppercase tracking-[0.3em] text-slate-400 mt-4">
-            Deal Underwriting
-          </p>
-        </div>
-        <form onSubmit={onSubmit} className="bg-white rounded-md shadow-lg p-8 space-y-5">
+        <form
+          onSubmit={onSubmit}
+          className="bg-white rounded-md shadow-2xl px-8 pt-10 pb-8 space-y-6"
+        >
+          <div className="text-center">
+            <Logo className="h-16 w-auto mx-auto" />
+            <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500 mt-4">
+              Deal Underwriting
+            </p>
+          </div>
+          <div className="border-t border-slate-100" />
           <div>
             <label className="rvc-label">Access Password</label>
             <input

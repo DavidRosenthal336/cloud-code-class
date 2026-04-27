@@ -5,7 +5,7 @@ export default function Header({ onSignOut, showSignOut }) {
     <header className="bg-navy text-white">
       <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between border-b border-gold/40">
         <div>
-          <Logo className="h-10 w-auto text-slate-300" />
+          <Logo className="h-10 w-auto" invert />
           <p className="text-[10px] uppercase tracking-[0.25em] text-gold-soft mt-2">
             Deal Underwriting Assistant
           </p>
