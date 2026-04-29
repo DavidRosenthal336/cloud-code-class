@@ -16,25 +16,32 @@ const DEFAULT_DEAL = {
   assetClass: 'multifamily',
   units: 50,
   squareFootage: 0,
-  askingPrice: 10_000_000,
+  purchasePrice: 10_000_000,
   grossRent: 1_200_000,
   vacancyRate: 0.05,
   opex: {
-    mode: 'percent',
+    mode: 'itemized',
     percent: 0.35,
     itemized: {
-      taxes: 120_000,
-      insurance: 25_000,
+      contracts: 30_000,
+      payroll: 60_000,
+      repairsAndMaintenance: 50_000,
+      administrative: 25_000,
       management: 50_000,
-      maintenance: 60_000,
       utilities: 30_000,
-      reserves: 20_000,
+      reTaxes: 120_000,
+      insurance: 25_000,
     },
   },
   loanAmount: 7_000_000,
   interestRate: 0.065,
   amortYears: 30,
+  ioPeriodYears: 0,
+  closingCostsPct: 0.02,
+  capitalImprovements: 250_000,
+  workingCapital: 150_000,
   rentGrowth: 0.03,
+  expenseGrowth: 0.025,
   holdPeriod: 5,
   exitCapRate: 0.06,
 };
@@ -69,7 +76,7 @@ export default function App() {
     const egi = effectiveGrossIncome(deal.grossRent, deal.vacancyRate);
     const opex = operatingExpenses(deal.opex, egi);
     const noiY1 = egi - opex;
-    return capRate(noiY1, deal.askingPrice) + 0.005;
+    return capRate(noiY1, deal.purchasePrice) + 0.005;
   }, [deal]);
 
   if (auth.status === 'loading') {

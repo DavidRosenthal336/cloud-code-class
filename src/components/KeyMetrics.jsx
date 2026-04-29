@@ -23,9 +23,16 @@ export default function KeyMetrics({ metrics }) {
       </div>
       <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
         <SubMetric label="Year 1 NOI" value={fmtCurrency(metrics.noi)} />
-        <SubMetric label="Annual Debt Service" value={fmtCurrency(metrics.annualDebtService)} />
-        <SubMetric label="Initial Equity" value={fmtCurrency(metrics.initialEquity)} />
-        <SubMetric label="Projected Sale Proceeds" value={fmtCurrency(metrics.saleProceeds)} />
+        <SubMetric label="Total Expenses (Y1)" value={fmtCurrency(metrics.totalExpenses)} />
+        <SubMetric label="Annual Debt Service (Y1)" value={fmtCurrency(metrics.annualDebtService)} />
+        <SubMetric label="Total Equity" value={fmtCurrency(metrics.totalEquity)} />
+        <SubMetric label="Down Payment" value={fmtCurrency(metrics.downPayment)} />
+        <SubMetric label="Closing Costs" value={fmtCurrency(metrics.closingCosts)} />
+        <SubMetric label="Capital Improvements" value={fmtCurrency(metrics.capitalImprovements)} />
+        <SubMetric label="Working Capital" value={fmtCurrency(metrics.workingCapital)} />
+        <SubMetric label="Projected Exit Value" value={fmtCurrency(metrics.exitValue)} />
+        <SubMetric label="Loan Balance at Exit" value={fmtCurrency(metrics.loanBalanceAtExit)} />
+        <SubMetric label="Sale Proceeds" value={fmtCurrency(metrics.saleProceeds)} />
       </div>
     </div>
   );

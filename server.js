@@ -140,21 +140,34 @@ DEAL OVERVIEW
 - Address: ${inputs.address || 'Not specified'}
 - Asset class: ${inputs.assetClass}
 - Size: ${inputs.units ? inputs.units + ' units' : (inputs.squareFootage || 0).toLocaleString() + ' SF'}
-- Asking price: ${dollars(inputs.askingPrice)}
+- Purchase price: ${dollars(inputs.purchasePrice)}
+
+CAPITAL STACK
+- Loan amount: ${dollars(inputs.loanAmount)} @ ${pct(inputs.interestRate)} (${inputs.amortYears}-yr amort, ${inputs.ioPeriodYears || 0}-yr IO)
+- Down payment: ${dollars(metrics.downPayment)}
+- Closing costs: ${dollars(metrics.closingCosts)} (${pct(inputs.closingCostsPct)})
+- Capital improvements: ${dollars(metrics.capitalImprovements)}
+- Working capital: ${dollars(metrics.workingCapital)}
+- Total equity: ${dollars(metrics.totalEquity)}
 
 FINANCIAL METRICS
 - Effective Gross Income (Y1): ${dollars(metrics.egi)}
+- Total Operating Expenses (Y1): ${dollars(metrics.totalExpenses)}
 - Net Operating Income (Y1): ${dollars(metrics.noi)}
 - Going-in cap rate: ${pct(metrics.capRate)}
+- Annual debt service (Y1): ${dollars(metrics.annualDebtService)}
+- DSCR (Y1): ${fmt(metrics.dscr)}
 - Cash-on-Cash return (Y1): ${pct(metrics.cashOnCash)}
-- DSCR: ${fmt(metrics.dscr)}
-- Annual debt service: ${dollars(metrics.annualDebtService)}
 - Levered IRR (${inputs.holdPeriod}-yr hold): ${pct(metrics.irr)}
 - Equity multiple: ${fmt(metrics.equityMultiple)}x
-- Initial equity: ${dollars(metrics.initialEquity)}
 - Exit value: ${dollars(metrics.exitValue)}
-- Exit cap rate assumption: ${pct(inputs.exitCapRate)}
-- Rent growth assumption: ${pct(inputs.rentGrowth)}
+- Sale proceeds: ${dollars(metrics.saleProceeds)}
+
+ASSUMPTIONS
+- Vacancy: ${pct(inputs.vacancyRate)}
+- Rent growth: ${pct(inputs.rentGrowth)}
+- Expense increase rate: ${pct(inputs.expenseGrowth)}
+- Exit cap rate: ${pct(inputs.exitCapRate)}
 
 PROJECTIONS
 ${projectionLines}

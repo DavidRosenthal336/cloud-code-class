@@ -1,8 +1,9 @@
 // Pure financial calculations for real estate deal underwriting.
 // All functions are pure. All rates are decimals (5% = 0.05). All currency is USD.
 
-const OPEX_GROWTH_RATE = 0.025;
 const SELLING_COST_PCT = 0.02;
+
+// --- Mortgage primitives ---
 
 export function mortgagePayment(loan, annualRate, amortYears) {
   if (loan <= 0 || amortYears <= 0) return 0;
@@ -12,52 +13,79 @@ export function mortgagePayment(loan, annualRate, amortYears) {
   return (loan * (r * Math.pow(1 + r, n))) / (Math.pow(1 + r, n) - 1);
 }
 
-export function annualDebtService(loan, annualRate, amortYears) {
-  return mortgagePayment(loan, annualRate, amortYears) * 12;
+// Annual debt service for a given year, accounting for interest-only period.
+// During IO years (1..ioYears) borrower pays only interest on the full principal.
+// After IO, payments amortize the full principal over the remaining term
+// (amortYears - ioYears).
+export function annualDebtServiceForYear(deal, year) {
+  if (deal.loanAmount <= 0) return 0;
+  const ioYears = deal.ioPeriodYears || 0;
+  if (year <= ioYears) {
+    return deal.loanAmount * deal.interestRate;
+  }
+  const remainingAmort = Math.max(1, deal.amortYears - ioYears);
+  return mortgagePayment(deal.loanAmount, deal.interestRate, remainingAmort) * 12;
 }
 
-export function loanBalanceAfterYears(loan, annualRate, amortYears, k) {
-  if (loan <= 0 || amortYears <= 0) return 0;
-  if (k <= 0) return loan;
-  if (k >= amortYears) return 0;
-  const n = amortYears * 12;
-  const months = k * 12;
-  if (annualRate === 0) {
-    const payment = loan / n;
-    return Math.max(0, loan - payment * months);
+// Loan balance at the END of year k (after k years of payments).
+// During IO the principal is unchanged; afterwards it amortizes over the
+// remaining schedule.
+export function loanBalanceAfterYears(deal, k) {
+  if (deal.loanAmount <= 0 || deal.amortYears <= 0) return 0;
+  if (k <= 0) return deal.loanAmount;
+  const ioYears = deal.ioPeriodYears || 0;
+  if (k <= ioYears) return deal.loanAmount;
+  const yearsAmortizing = k - ioYears;
+  const remainingAmort = Math.max(1, deal.amortYears - ioYears);
+  if (yearsAmortizing >= remainingAmort) return 0;
+  const n = remainingAmort * 12;
+  const months = yearsAmortizing * 12;
+  if (deal.interestRate === 0) {
+    const payment = deal.loanAmount / n;
+    return Math.max(0, deal.loanAmount - payment * months);
   }
-  const r = annualRate / 12;
+  const r = deal.interestRate / 12;
   const pow = Math.pow(1 + r, n);
   const powK = Math.pow(1 + r, months);
-  return loan * ((pow - powK) / (pow - 1));
+  return deal.loanAmount * ((pow - powK) / (pow - 1));
 }
+
+// --- Income / expenses ---
 
 export function effectiveGrossIncome(grossRent, vacancyPct) {
   return grossRent * (1 - vacancyPct);
 }
+
+const ITEMIZED_KEYS = [
+  'contracts',
+  'payroll',
+  'repairsAndMaintenance',
+  'administrative',
+  'management',
+  'utilities',
+  'reTaxes',
+  'insurance',
+];
 
 export function operatingExpenses(input, egi) {
   if (input.mode === 'percent') {
     return egi * input.percent;
   }
   const i = input.itemized || {};
-  return (
-    (i.taxes || 0) +
-    (i.insurance || 0) +
-    (i.management || 0) +
-    (i.maintenance || 0) +
-    (i.utilities || 0) +
-    (i.reserves || 0)
-  );
+  return ITEMIZED_KEYS.reduce((sum, key) => sum + (Number(i[key]) || 0), 0);
+}
+
+export function totalItemizedExpenses(itemized) {
+  return ITEMIZED_KEYS.reduce((sum, key) => sum + (Number(itemized?.[key]) || 0), 0);
 }
 
 export function noi(egi, opex) {
   return egi - opex;
 }
 
-export function capRate(noiValue, askingPrice) {
-  if (askingPrice <= 0) return 0;
-  return noiValue / askingPrice;
+export function capRate(noiValue, purchasePrice) {
+  if (purchasePrice <= 0) return 0;
+  return noiValue / purchasePrice;
 }
 
 export function dscr(noiValue, debtService) {
@@ -65,17 +93,33 @@ export function dscr(noiValue, debtService) {
   return noiValue / debtService;
 }
 
+// --- Equity ---
+
+// Total Equity = Down Payment + Closing Costs + Capital Improvements + Working Capital.
+// This is the cash an investor must bring to close the deal — used for IRR,
+// equity multiple, and cash-on-cash denominators.
+export function totalEquity(deal) {
+  const downPayment = Math.max(0, deal.purchasePrice - deal.loanAmount);
+  const closingCosts = deal.purchasePrice * (deal.closingCostsPct || 0);
+  const capex = deal.capitalImprovements || 0;
+  const wc = deal.workingCapital || 0;
+  return downPayment + closingCosts + capex + wc;
+}
+
+// --- Projections ---
+
 export function projectYears(deal, years = 10) {
-  const ds = annualDebtService(deal.loanAmount, deal.interestRate, deal.amortYears);
   const out = [];
   let cumulative = 0;
+  const opexY1 = operatingExpenses(deal.opex, effectiveGrossIncome(deal.grossRent, deal.vacancyRate));
+  const expenseGrowth = deal.expenseGrowth ?? 0.025;
   for (let y = 1; y <= years; y++) {
     const grossRent = deal.grossRent * Math.pow(1 + deal.rentGrowth, y - 1);
     const egi = effectiveGrossIncome(grossRent, deal.vacancyRate);
-    const opexY1 = operatingExpenses(deal.opex, effectiveGrossIncome(deal.grossRent, deal.vacancyRate));
-    const opex = opexY1 * Math.pow(1 + OPEX_GROWTH_RATE, y - 1);
+    const opex = opexY1 * Math.pow(1 + expenseGrowth, y - 1);
     const noiY = egi - opex;
-    const cashFlow = noiY - ds;
+    const debtService = annualDebtServiceForYear(deal, y);
+    const cashFlow = noiY - debtService;
     cumulative += cashFlow;
     out.push({
       year: y,
@@ -83,7 +127,7 @@ export function projectYears(deal, years = 10) {
       egi,
       opex,
       noi: noiY,
-      debtService: ds,
+      debtService,
       cashFlow,
       cumulativeCashFlow: cumulative,
     });
@@ -96,12 +140,13 @@ export function exitValue(noiYearAfterExit, exitCapRate) {
   return noiYearAfterExit / exitCapRate;
 }
 
-export function saleProceeds(exitVal, loanBalance, sellingCostPct = SELLING_COST_PCT) {
-  return exitVal * (1 - sellingCostPct) - loanBalance;
+// At sale: gross proceeds less selling costs, less remaining loan balance,
+// plus return of working capital reserve.
+export function saleProceeds(exitVal, loanBalance, workingCapital = 0, sellingCostPct = SELLING_COST_PCT) {
+  return exitVal * (1 - sellingCostPct) - loanBalance + workingCapital;
 }
 
-// IRR via bisection. Returns null if undefined (e.g., no sign change in cashflows).
-// cashflows[0] should be the negative initial equity; subsequent are annual flows.
+// IRR via bisection. Returns null if undefined (e.g., no sign change).
 export function irr(cashflows) {
   if (!cashflows || cashflows.length < 2) return null;
   const total = cashflows.reduce((s, v) => s + v, 0);
@@ -143,39 +188,38 @@ export function irr(cashflows) {
   return (lo + hi) / 2;
 }
 
-export function equityMultiple(annualCashFlows, saleProceedsAtExit, initialEquity) {
-  if (initialEquity <= 0) return null;
+export function equityMultiple(annualCashFlows, saleProceedsAtExit, equity) {
+  if (equity <= 0) return null;
   const totalIn = annualCashFlows.reduce((s, v) => s + v, 0) + saleProceedsAtExit;
-  return totalIn / initialEquity;
+  return totalIn / equity;
 }
 
-// Orchestrator. Returns inputs (echoed), metrics, projections, sensitivity grid.
+// --- Orchestrator ---
+
 export function runUnderwrite(deal) {
   const projections = projectYears(deal, 10);
   const y1 = projections[0];
-  const ds = y1.debtService;
-  const initialEquity = Math.max(0, deal.askingPrice - deal.loanAmount);
-  const goingInCap = capRate(y1.noi, deal.askingPrice);
+  const equity = totalEquity(deal);
+  const goingInCap = capRate(y1.noi, deal.purchasePrice);
 
   const hold = clamp(deal.holdPeriod, 1, 10);
   const exitProj = projectYears(deal, hold + 1);
   const noiAtExitPlusOne = exitProj[hold].noi;
   const exitVal = exitValue(noiAtExitPlusOne, deal.exitCapRate);
-  const loanBalAtExit = loanBalanceAfterYears(deal.loanAmount, deal.interestRate, deal.amortYears, hold);
-  const proceeds = saleProceeds(exitVal, loanBalAtExit);
+  const loanBalAtExit = loanBalanceAfterYears(deal, hold);
+  const proceeds = saleProceeds(exitVal, loanBalAtExit, deal.workingCapital || 0);
 
-  const irrFlows = [-initialEquity];
+  const irrFlows = [-equity];
   for (let y = 1; y <= hold; y++) {
     const cf = projections[y - 1].cashFlow + (y === hold ? proceeds : 0);
     irrFlows.push(cf);
   }
   const irrValue = irr(irrFlows);
   const annualFlows = projections.slice(0, hold).map((p) => p.cashFlow);
-  const eqMult = equityMultiple(annualFlows, proceeds, initialEquity);
+  const eqMult = equityMultiple(annualFlows, proceeds, equity);
 
-  const cashOnCash = initialEquity > 0 ? y1.cashFlow / initialEquity : null;
+  const cashOnCash = equity > 0 ? y1.cashFlow / equity : null;
 
-  // 3x3 sensitivity grid: exit cap (rows) x rent growth (cols) -> IRR
   const exitCapAxis = [deal.exitCapRate - 0.005, deal.exitCapRate, deal.exitCapRate + 0.005];
   const rentGrowthAxis = [
     Math.max(0, deal.rentGrowth - 0.01),
@@ -185,7 +229,7 @@ export function runUnderwrite(deal) {
   const sensitivity = exitCapAxis.map((ec) =>
     rentGrowthAxis.map((rg) => {
       const altDeal = { ...deal, exitCapRate: ec, rentGrowth: rg };
-      return computeIRR(altDeal, hold, initialEquity);
+      return computeIRR(altDeal, hold);
     })
   );
 
@@ -194,13 +238,18 @@ export function runUnderwrite(deal) {
     metrics: {
       egi: y1.egi,
       noi: y1.noi,
+      totalExpenses: y1.opex,
       capRate: goingInCap,
-      annualDebtService: ds,
+      annualDebtService: y1.debtService,
       cashOnCash,
-      dscr: dscr(y1.noi, ds),
+      dscr: dscr(y1.noi, y1.debtService),
       irr: irrValue,
       equityMultiple: eqMult,
-      initialEquity,
+      totalEquity: equity,
+      downPayment: Math.max(0, deal.purchasePrice - deal.loanAmount),
+      closingCosts: deal.purchasePrice * (deal.closingCostsPct || 0),
+      capitalImprovements: deal.capitalImprovements || 0,
+      workingCapital: deal.workingCapital || 0,
       exitValue: exitVal,
       loanBalanceAtExit: loanBalAtExit,
       saleProceeds: proceeds,
@@ -211,13 +260,14 @@ export function runUnderwrite(deal) {
   };
 }
 
-function computeIRR(deal, hold, initialEquity) {
+function computeIRR(deal, hold) {
+  const equity = totalEquity(deal);
   const proj = projectYears(deal, hold + 1);
   const noiNext = proj[hold].noi;
   const exitVal = exitValue(noiNext, deal.exitCapRate);
-  const loanBal = loanBalanceAfterYears(deal.loanAmount, deal.interestRate, deal.amortYears, hold);
-  const proceeds = saleProceeds(exitVal, loanBal);
-  const flows = [-initialEquity];
+  const loanBal = loanBalanceAfterYears(deal, hold);
+  const proceeds = saleProceeds(exitVal, loanBal, deal.workingCapital || 0);
+  const flows = [-equity];
   for (let y = 1; y <= hold; y++) {
     flows.push(proj[y - 1].cashFlow + (y === hold ? proceeds : 0));
   }
