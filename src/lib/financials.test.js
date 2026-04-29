@@ -27,6 +27,8 @@ const sampleItemized = {
   utilities: 30_000,
   reTaxes: 120_000,
   insurance: 25_000,
+  marketing: 15_000,
+  turnover: 20_000,
 };
 
 const sampleDeal = {
@@ -115,8 +117,8 @@ describe('income / expenses', () => {
     expect(effectiveGrossIncome(1_000_000, 0.05)).toBe(950_000);
   });
 
-  it('sums itemized opex across all 8 categories', () => {
-    expect(totalItemizedExpenses(sampleItemized)).toBe(390_000);
+  it('sums itemized opex across all 10 categories', () => {
+    expect(totalItemizedExpenses(sampleItemized)).toBe(425_000);
   });
 
   it('computes opex as percent of EGI', () => {
@@ -208,7 +210,7 @@ describe('runUnderwrite (integration)', () => {
   it('returns full payload with new fields', () => {
     const r = runUnderwrite(sampleDeal);
     expect(r.metrics.totalEquity).toBe(3_600_000);
-    expect(r.metrics.totalExpenses).toBeCloseTo(390_000, 0);
+    expect(r.metrics.totalExpenses).toBeCloseTo(425_000, 0);
     expect(r.metrics.noi).toBeGreaterThan(0);
     expect(r.metrics.capRate).toBeGreaterThan(0.04);
     expect(r.projections).toHaveLength(10);

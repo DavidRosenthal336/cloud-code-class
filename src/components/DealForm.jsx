@@ -12,6 +12,8 @@ const ITEMIZED_FIELDS = [
   ['utilities', 'Utilities'],
   ['reTaxes', 'RE Taxes'],
   ['insurance', 'Insurance'],
+  ['marketing', 'Marketing'],
+  ['turnover', 'Turnover'],
 ];
 
 export default function DealForm({ deal, setDeal, suggestedExitCap }) {

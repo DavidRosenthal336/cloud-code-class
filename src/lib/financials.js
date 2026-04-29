@@ -65,6 +65,8 @@ const ITEMIZED_KEYS = [
   'utilities',
   'reTaxes',
   'insurance',
+  'marketing',
+  'turnover',
 ];
 
 export function operatingExpenses(input, egi) {

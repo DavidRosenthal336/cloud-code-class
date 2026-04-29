@@ -31,6 +31,8 @@ const DEFAULT_DEAL = {
       utilities: 30_000,
       reTaxes: 120_000,
       insurance: 25_000,
+      marketing: 15_000,
+      turnover: 20_000,
     },
   },
   loanAmount: 7_000_000,
