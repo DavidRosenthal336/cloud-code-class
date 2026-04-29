@@ -95,9 +95,44 @@ export function dscr(noiValue, debtService) {
   return noiValue / debtService;
 }
 
+// --- Value-Add Plan ---
+
+// Total renovation cost: units × cost per unit. Added to total equity at close.
+export function valueAddTotalCost(deal) {
+  const va = deal.valueAdd;
+  if (!va || !va.enabled) return 0;
+  return (va.unitsToUpgrade || 0) * (va.costPerUnit || 0);
+}
+
+// Annualized premium rent income for a given year, in pre-rent-growth dollars.
+// Units come online at the user-specified monthly velocity; premium income
+// is computed using the average upgraded-unit count during the year.
+export function valueAddPremiumForYear(deal, year) {
+  const va = deal.valueAdd;
+  if (!va || !va.enabled) return 0;
+  const total = va.unitsToUpgrade || 0;
+  const perMonth = va.unitsPerMonth || 0;
+  const premium = va.premiumPerUnit || 0;
+  if (total <= 0 || premium <= 0) return 0;
+  const monthsAtStart = (year - 1) * 12;
+  const monthsAtEnd = year * 12;
+  let unitsAtStart;
+  let unitsAtEnd;
+  if (perMonth <= 0) {
+    unitsAtStart = total;
+    unitsAtEnd = total;
+  } else {
+    unitsAtStart = Math.min(total, perMonth * monthsAtStart);
+    unitsAtEnd = Math.min(total, perMonth * monthsAtEnd);
+  }
+  const avgUnits = (unitsAtStart + unitsAtEnd) / 2;
+  return avgUnits * premium * 12;
+}
+
 // --- Equity ---
 
-// Total Equity = Down Payment + Closing Costs + Capital Improvements + Working Capital.
+// Total Equity = Down Payment + Closing Costs + Capital Improvements
+//              + Working Capital + Value-Add Capex.
 // This is the cash an investor must bring to close the deal — used for IRR,
 // equity multiple, and cash-on-cash denominators.
 export function totalEquity(deal) {
@@ -105,7 +140,8 @@ export function totalEquity(deal) {
   const closingCosts = deal.purchasePrice * (deal.closingCostsPct || 0);
   const capex = deal.capitalImprovements || 0;
   const wc = deal.workingCapital || 0;
-  return downPayment + closingCosts + capex + wc;
+  const va = valueAddTotalCost(deal);
+  return downPayment + closingCosts + capex + wc + va;
 }
 
 // --- Projections ---
@@ -116,7 +152,10 @@ export function projectYears(deal, years = 10) {
   const opexY1 = operatingExpenses(deal.opex, effectiveGrossIncome(deal.grossRent, deal.vacancyRate));
   const expenseGrowth = deal.expenseGrowth ?? 0.025;
   for (let y = 1; y <= years; y++) {
-    const grossRent = deal.grossRent * Math.pow(1 + deal.rentGrowth, y - 1);
+    const growthFactor = Math.pow(1 + deal.rentGrowth, y - 1);
+    const baseRent = deal.grossRent * growthFactor;
+    const premiumRent = valueAddPremiumForYear(deal, y) * growthFactor;
+    const grossRent = baseRent + premiumRent;
     const egi = effectiveGrossIncome(grossRent, deal.vacancyRate);
     const opex = opexY1 * Math.pow(1 + expenseGrowth, y - 1);
     const noiY = egi - opex;
@@ -252,6 +291,7 @@ export function runUnderwrite(deal) {
       closingCosts: deal.purchasePrice * (deal.closingCostsPct || 0),
       capitalImprovements: deal.capitalImprovements || 0,
       workingCapital: deal.workingCapital || 0,
+      valueAddCapex: valueAddTotalCost(deal),
       exitValue: exitVal,
       loanBalanceAtExit: loanBalAtExit,
       saleProceeds: proceeds,

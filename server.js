@@ -133,6 +133,16 @@ function buildMemoPrompt(inputs, metrics, projections) {
     )
     .join('\n');
 
+  const compsSection =
+    Array.isArray(inputs.salesComps) && inputs.salesComps.length > 0
+      ? `\nSALES COMPS (similar properties sold within last 3 years)\n${inputs.salesComps
+          .map((c) => {
+            const ppu = c.units > 0 ? c.price / c.units : 0;
+            return `- ${c.address || 'Unnamed'} (${c.dateSold || 'date unknown'}): ${dollars(c.price)} total, ${dollars(ppu)}/unit (${c.units || 0} units)`;
+          })
+          .join('\n')}\n`
+      : '';
+
   return `You are a senior real estate underwriter at Rose Valley Capital, a $2B+ AUM vertically integrated real estate investment firm. Write a concise, institutional-quality investment memo for the deal below. The reader is a senior principal — be direct, balanced, and specific.
 
 DEAL OVERVIEW
@@ -147,7 +157,12 @@ CAPITAL STACK
 - Down payment: ${dollars(metrics.downPayment)}
 - Closing costs: ${dollars(metrics.closingCosts)} (${pct(inputs.closingCostsPct)})
 - Capital improvements: ${dollars(metrics.capitalImprovements)}
-- Working capital: ${dollars(metrics.workingCapital)}
+- Working capital: ${dollars(metrics.workingCapital)}${
+    inputs.valueAdd?.enabled
+      ? `
+- Value-add capex: ${dollars(metrics.valueAddCapex)} (${inputs.valueAdd.unitsToUpgrade} units @ ${dollars(inputs.valueAdd.costPerUnit)}/unit, paced at ${inputs.valueAdd.unitsPerMonth}/mo, $${inputs.valueAdd.premiumPerUnit}/mo premium)`
+      : ''
+  }
 - Total equity: ${dollars(metrics.totalEquity)}
 
 FINANCIAL METRICS
@@ -171,7 +186,7 @@ ASSUMPTIONS
 
 PROJECTIONS
 ${projectionLines}
-
+${compsSection}
 INSTRUCTIONS
 Write a 4-paragraph memo with these sections (use the exact headers, bold them with markdown):
 

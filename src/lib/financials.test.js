@@ -10,6 +10,8 @@ import {
   capRate,
   dscr,
   totalEquity,
+  valueAddTotalCost,
+  valueAddPremiumForYear,
   projectYears,
   exitValue,
   saleProceeds,
@@ -203,6 +205,53 @@ describe('irr / equityMultiple', () => {
 
   it('computes equity multiple', () => {
     expect(equityMultiple([100, 100, 100], 1500, 1000)).toBe(1.8);
+  });
+});
+
+describe('valueAdd', () => {
+  const vaDeal = {
+    ...sampleDeal,
+    valueAdd: {
+      enabled: true,
+      unitsToUpgrade: 30,
+      unitsPerMonth: 4,
+      costPerUnit: 15_000,
+      premiumPerUnit: 200,
+    },
+  };
+
+  it('returns 0 cost when disabled', () => {
+    expect(valueAddTotalCost({ ...vaDeal, valueAdd: { ...vaDeal.valueAdd, enabled: false } })).toBe(0);
+  });
+
+  it('total cost is units × cost per unit', () => {
+    expect(valueAddTotalCost(vaDeal)).toBe(30 * 15_000);
+  });
+
+  it('premium income ramps based on monthly velocity', () => {
+    // Year 1: 0 -> 48 units would be capped at 30 by year-end; avg = 24 (since
+    // halfway through the year average is 24), but capped by total of 30
+    // start=0, end=min(30, 4*12)=30, avg=15, premium=15*200*12=36000
+    expect(valueAddPremiumForYear(vaDeal, 1)).toBeCloseTo(15 * 200 * 12);
+  });
+
+  it('premium income stabilizes at full ramp', () => {
+    // Year 2 onwards: all 30 units online, avg=30
+    expect(valueAddPremiumForYear(vaDeal, 2)).toBeCloseTo(30 * 200 * 12);
+    expect(valueAddPremiumForYear(vaDeal, 5)).toBeCloseTo(30 * 200 * 12);
+  });
+
+  it('totalEquity includes value-add capex', () => {
+    const baseEq = totalEquity(sampleDeal);
+    const vaEq = totalEquity(vaDeal);
+    expect(vaEq).toBe(baseEq + 30 * 15_000);
+  });
+
+  it('value-add lifts NOI in projections', () => {
+    const noVa = projectYears(sampleDeal, 5);
+    const withVa = projectYears(vaDeal, 5);
+    // Year 2 (full ramp) should have meaningfully higher NOI
+    expect(withVa[1].noi).toBeGreaterThan(noVa[1].noi);
   });
 });
 

@@ -72,6 +72,27 @@ export async function exportMemoPDF({ inputs, metrics, projections, sensitivity,
     ]),
   });
 
+  // Sales Comps
+  if (Array.isArray(inputs.salesComps) && inputs.salesComps.length > 0) {
+    y = doc.lastAutoTable.finalY + 24;
+    sectionHeading(doc, 'Sales Comps', margin, y);
+    autoTable(doc, {
+      startY: y + 4,
+      margin: { left: margin, right: margin },
+      theme: 'striped',
+      styles: { font: 'helvetica', fontSize: 9, cellPadding: 4 },
+      headStyles: { fillColor: NAVY, textColor: '#ffffff', fontStyle: 'bold' },
+      head: [['Property', 'Date Sold', 'Price', 'Units', '$/Unit']],
+      body: inputs.salesComps.map((c) => [
+        c.address || '—',
+        c.dateSold || '—',
+        fmtCurrency(c.price),
+        String(c.units || 0),
+        fmtCurrency(c.units > 0 ? c.price / c.units : 0),
+      ]),
+    });
+  }
+
   // Sensitivity
   y = doc.lastAutoTable.finalY + 24;
   sectionHeading(doc, 'Sensitivity Analysis — IRR', margin, y);
@@ -161,7 +182,7 @@ function sectionHeading(doc, title, x, y) {
 }
 
 function investmentSummaryRows(inputs) {
-  return [
+  const rows = [
     ['Property', inputs.propertyName || '—'],
     ['Address', inputs.address || '—'],
     ['Asset Class', capitalize(inputs.assetClass)],
@@ -185,6 +206,17 @@ function investmentSummaryRows(inputs) {
     ['Expense Increase Rate', fmtPercent(inputs.expenseGrowth)],
     ['Exit Cap Rate', fmtPercent(inputs.exitCapRate)],
   ];
+  if (inputs.valueAdd?.enabled) {
+    const va = inputs.valueAdd;
+    rows.push(
+      ['Value-Add: Units', `${va.unitsToUpgrade || 0}`],
+      ['Value-Add: Pace', `${va.unitsPerMonth || 0} units/mo`],
+      ['Value-Add: Cost / Unit', fmtCurrency(va.costPerUnit)],
+      ['Value-Add: Premium / Unit', `${fmtCurrency(va.premiumPerUnit)} / mo`],
+      ['Value-Add: Total Capex', fmtCurrency((va.unitsToUpgrade || 0) * (va.costPerUnit || 0))]
+    );
+  }
+  return rows;
 }
 
 function keyMetricsRows(m) {
@@ -202,6 +234,7 @@ function keyMetricsRows(m) {
     ['Closing Costs', fmtCurrency(m.closingCosts)],
     ['Capital Improvements', fmtCurrency(m.capitalImprovements)],
     ['Working Capital', fmtCurrency(m.workingCapital)],
+    ...(m.valueAddCapex > 0 ? [['Value-Add Capex', fmtCurrency(m.valueAddCapex)]] : []),
     ['Total Equity', fmtCurrency(m.totalEquity)],
     ['Projected Exit Value', fmtCurrency(m.exitValue)],
     ['Loan Balance at Exit', fmtCurrency(m.loanBalanceAtExit)],

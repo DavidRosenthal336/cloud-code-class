@@ -24,6 +24,27 @@ export default function DealForm({ deal, setDeal, suggestedExitCap }) {
       ...deal,
       opex: { ...deal.opex, itemized: { ...deal.opex.itemized, ...patch } },
     });
+  const updateValueAdd = (patch) =>
+    setDeal({ ...deal, valueAdd: { ...deal.valueAdd, ...patch } });
+
+  const updateComp = (idx, patch) => {
+    const next = [...(deal.salesComps || [])];
+    next[idx] = { ...next[idx], ...patch };
+    setDeal({ ...deal, salesComps: next });
+  };
+  const addComp = () =>
+    setDeal({
+      ...deal,
+      salesComps: [
+        ...(deal.salesComps || []),
+        { address: '', dateSold: '', price: 0, units: 0 },
+      ],
+    });
+  const removeComp = (idx) =>
+    setDeal({
+      ...deal,
+      salesComps: (deal.salesComps || []).filter((_, i) => i !== idx),
+    });
 
   const isMultifamily = deal.assetClass === 'multifamily';
   const itemizedTotal = totalItemizedExpenses(deal.opex.itemized);
@@ -234,6 +255,136 @@ export default function DealForm({ deal, setDeal, suggestedExitCap }) {
             />
           </Field>
         </div>
+      </Section>
+
+      <Section title="Value-Add Plan">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Field label="Value-Add Plan?">
+            <select
+              className="rvc-input"
+              value={deal.valueAdd?.enabled ? 'yes' : 'no'}
+              onChange={(e) => updateValueAdd({ enabled: e.target.value === 'yes' })}
+            >
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+            </select>
+          </Field>
+        </div>
+
+        {deal.valueAdd?.enabled && (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Field label="Units to Upgrade">
+              <NumberInput
+                value={deal.valueAdd.unitsToUpgrade}
+                onChange={(v) => updateValueAdd({ unitsToUpgrade: Math.max(0, v || 0) })}
+                placeholder="30"
+              />
+            </Field>
+            <Field label="Units Renovated per Month">
+              <NumberInput
+                value={deal.valueAdd.unitsPerMonth}
+                onChange={(v) => updateValueAdd({ unitsPerMonth: Math.max(0, v || 0) })}
+                placeholder="4"
+              />
+            </Field>
+            <Field label="Avg Cost per Unit ($)">
+              <NumberInput
+                value={deal.valueAdd.costPerUnit}
+                onChange={(v) => updateValueAdd({ costPerUnit: Math.max(0, v || 0) })}
+                placeholder="15000"
+              />
+            </Field>
+            <Field label="Avg Rent Premium per Unit ($/mo)">
+              <NumberInput
+                value={deal.valueAdd.premiumPerUnit}
+                onChange={(v) => updateValueAdd({ premiumPerUnit: Math.max(0, v || 0) })}
+                placeholder="200"
+              />
+            </Field>
+            <div className="md:col-span-2 flex items-center justify-between bg-slate-50 border border-slate-200 rounded-md px-3 py-2">
+              <span className="text-xs uppercase tracking-wide text-slate-600 font-semibold">
+                Total Value-Add Capex
+              </span>
+              <span className="font-serif text-base text-navy tabular-nums">
+                {fmtCurrency(
+                  (deal.valueAdd.unitsToUpgrade || 0) * (deal.valueAdd.costPerUnit || 0)
+                )}
+              </span>
+            </div>
+          </div>
+        )}
+      </Section>
+
+      <Section title="Sales Comps">
+        <p className="text-xs text-slate-500 mb-3">
+          Similar properties sold within the last 3 years.
+        </p>
+        {(deal.salesComps || []).length === 0 && (
+          <p className="text-xs text-slate-400 italic mb-3">No comps added yet.</p>
+        )}
+        <div className="space-y-3">
+          {(deal.salesComps || []).map((comp, idx) => {
+            const ppu = comp.units > 0 ? comp.price / comp.units : 0;
+            return (
+              <div
+                key={idx}
+                className="grid grid-cols-1 md:grid-cols-12 gap-2 items-end border border-slate-200 rounded-md p-3"
+              >
+                <div className="md:col-span-4">
+                  <label className="rvc-label">Address / Name</label>
+                  <input
+                    className="rvc-input"
+                    value={comp.address || ''}
+                    onChange={(e) => updateComp(idx, { address: e.target.value })}
+                    placeholder="100 Park Ave"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="rvc-label">Date Sold</label>
+                  <input
+                    type="date"
+                    className="rvc-input"
+                    value={comp.dateSold || ''}
+                    onChange={(e) => updateComp(idx, { dateSold: e.target.value })}
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="rvc-label">Price ($)</label>
+                  <NumberInput
+                    value={comp.price}
+                    onChange={(v) => updateComp(idx, { price: v })}
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="rvc-label">Units</label>
+                  <NumberInput
+                    value={comp.units}
+                    onChange={(v) => updateComp(idx, { units: v })}
+                  />
+                </div>
+                <div className="md:col-span-1">
+                  <label className="rvc-label">$/Unit</label>
+                  <div className="text-sm text-slate-ink tabular-nums py-2">
+                    {fmtCurrency(ppu)}
+                  </div>
+                </div>
+                <div className="md:col-span-1 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => removeComp(idx)}
+                    className="text-xs uppercase tracking-wide text-red-700 hover:text-red-900"
+                    title="Remove comp"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <button type="button" onClick={addComp} className="rvc-btn-secondary mt-3">
+          + Add Comp
+        </button>
       </Section>
     </div>
   );

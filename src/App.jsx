@@ -46,6 +46,14 @@ const DEFAULT_DEAL = {
   expenseGrowth: 0.025,
   holdPeriod: 5,
   exitCapRate: 0.06,
+  valueAdd: {
+    enabled: false,
+    unitsToUpgrade: 30,
+    unitsPerMonth: 4,
+    costPerUnit: 15_000,
+    premiumPerUnit: 200,
+  },
+  salesComps: [],
 };
 
 export default function App() {

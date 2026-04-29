@@ -30,6 +30,9 @@ export default function KeyMetrics({ metrics }) {
         <SubMetric label="Closing Costs" value={fmtCurrency(metrics.closingCosts)} />
         <SubMetric label="Capital Improvements" value={fmtCurrency(metrics.capitalImprovements)} />
         <SubMetric label="Working Capital" value={fmtCurrency(metrics.workingCapital)} />
+        {metrics.valueAddCapex > 0 && (
+          <SubMetric label="Value-Add Capex" value={fmtCurrency(metrics.valueAddCapex)} />
+        )}
         <SubMetric label="Projected Exit Value" value={fmtCurrency(metrics.exitValue)} />
         <SubMetric label="Loan Balance at Exit" value={fmtCurrency(metrics.loanBalanceAtExit)} />
         <SubMetric label="Sale Proceeds" value={fmtCurrency(metrics.saleProceeds)} />
