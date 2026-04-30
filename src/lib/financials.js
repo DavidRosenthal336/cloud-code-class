@@ -261,18 +261,14 @@ export function runUnderwrite(deal) {
 
   const cashOnCash = equity > 0 ? y1.cashFlow / equity : null;
 
-  const exitCapAxis = [deal.exitCapRate - 0.005, deal.exitCapRate, deal.exitCapRate + 0.005];
-  const rentGrowthAxis = [
-    Math.max(0, deal.rentGrowth - 0.01),
-    deal.rentGrowth,
-    deal.rentGrowth + 0.01,
-  ];
-  const sensitivity = exitCapAxis.map((ec) =>
-    rentGrowthAxis.map((rg) => {
-      const altDeal = { ...deal, exitCapRate: ec, rentGrowth: rg };
-      return computeIRR(altDeal, hold);
-    })
-  );
+  // Single-axis sensitivity around the input exit cap rate: 9 cells at
+  // 0.25% (25bps) increments — 4 below, the input itself, and 4 above.
+  const sensitivityDeltas = [-0.01, -0.0075, -0.005, -0.0025, 0, 0.0025, 0.005, 0.0075, 0.01];
+  const exitCapAxis = sensitivityDeltas.map((d) => deal.exitCapRate + d);
+  const sensitivity = exitCapAxis.map((ec) => {
+    const altDeal = { ...deal, exitCapRate: ec };
+    return computeIRR(altDeal, hold);
+  });
 
   return {
     inputs: deal,
@@ -298,7 +294,7 @@ export function runUnderwrite(deal) {
     },
     projections,
     sensitivity,
-    sensitivityAxes: { exitCap: exitCapAxis, rentGrowth: rentGrowthAxis },
+    sensitivityAxes: { exitCap: exitCapAxis, deltas: sensitivityDeltas },
   };
 }
 

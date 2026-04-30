@@ -93,31 +93,33 @@ export async function exportMemoPDF({ inputs, metrics, projections, sensitivity,
     });
   }
 
-  // Sensitivity
+  // Sensitivity — single-axis exit cap rate, 9 cells centered on input
   y = doc.lastAutoTable.finalY + 24;
-  sectionHeading(doc, 'Sensitivity Analysis — IRR', margin, y);
+  sectionHeading(doc, 'Sensitivity Analysis — IRR vs. Exit Cap', margin, y);
   autoTable(doc, {
     startY: y + 4,
     margin: { left: margin, right: margin },
     theme: 'grid',
-    styles: { font: 'helvetica', fontSize: 10, cellPadding: 5, halign: 'right' },
+    styles: { font: 'helvetica', fontSize: 9, cellPadding: 4, halign: 'right' },
     headStyles: { fillColor: NAVY, textColor: '#ffffff', fontStyle: 'bold', halign: 'center' },
     head: [
       [
-        'Exit Cap \\ Rent Growth',
-        ...axes.rentGrowth.map((rg) => fmtPercent(rg)),
+        { content: 'Exit Cap', styles: { halign: 'left' } },
+        ...axes.exitCap.map((ec, i) => ({
+          content: fmtPercent(ec),
+          styles: i === 4 ? { fillColor: NAVY, textColor: '#ffffff', fontStyle: 'bold' } : {},
+        })),
       ],
     ],
-    body: sensitivity.map((row, ri) => [
-      { content: fmtPercent(axes.exitCap[ri]), styles: { fontStyle: 'bold', halign: 'left' } },
-      ...row.map((v, ci) => ({
-        content: fmtPercent(v),
-        styles:
-          ri === 1 && ci === 1
-            ? { fillColor: NAVY, textColor: '#ffffff', fontStyle: 'bold' }
-            : {},
-      })),
-    ]),
+    body: [
+      [
+        { content: 'Levered IRR', styles: { halign: 'left', fontStyle: 'bold' } },
+        ...sensitivity.map((v, i) => ({
+          content: fmtPercent(v),
+          styles: i === 4 ? { fillColor: NAVY, textColor: '#ffffff', fontStyle: 'bold' } : {},
+        })),
+      ],
+    ],
   });
 
   // Narrative
