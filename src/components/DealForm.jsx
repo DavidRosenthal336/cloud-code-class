@@ -1,4 +1,5 @@
 import { totalItemizedExpenses } from '../lib/financials.js';
+import { filterComps } from '../lib/comps.js';
 import { fmtCurrency } from '../lib/format.js';
 
 const ASSET_CLASSES = ['multifamily', 'office', 'retail', 'industrial', 'coworking'];
@@ -37,7 +38,16 @@ export default function DealForm({ deal, setDeal, suggestedExitCap }) {
       ...deal,
       salesComps: [
         ...(deal.salesComps || []),
-        { address: '', dateSold: '', price: 0, units: 0 },
+        {
+          address: '',
+          dateSold: '',
+          price: 0,
+          units: 0,
+          yearBuilt: 0,
+          distance: 0,
+          buyer: '',
+          seller: '',
+        },
       ],
     });
   const removeComp = (idx) =>
@@ -45,6 +55,8 @@ export default function DealForm({ deal, setDeal, suggestedExitCap }) {
       ...deal,
       salesComps: (deal.salesComps || []).filter((_, i) => i !== idx),
     });
+  const updateFilter = (patch) =>
+    setDeal({ ...deal, compsFilter: { ...deal.compsFilter, ...patch } });
 
   const isMultifamily = deal.assetClass === 'multifamily';
   const itemizedTotal = totalItemizedExpenses(deal.opex.itemized);
@@ -94,6 +106,13 @@ export default function DealForm({ deal, setDeal, suggestedExitCap }) {
               />
             </Field>
           )}
+          <Field label="Year Built">
+            <NumberInput
+              value={deal.yearBuilt}
+              onChange={(v) => update({ yearBuilt: Math.max(0, v || 0) })}
+              placeholder="1990"
+            />
+          </Field>
         </div>
       </Section>
 
@@ -317,29 +336,99 @@ export default function DealForm({ deal, setDeal, suggestedExitCap }) {
 
       <Section title="Sales Comps">
         <p className="text-xs text-slate-500 mb-3">
-          Similar properties sold within the last 3 years.
+          Paste comps from your CoStar pull. The filters below control which appear in
+          the report — they don't delete anything.
         </p>
-        {(deal.salesComps || []).length === 0 && (
-          <p className="text-xs text-slate-400 italic mb-3">No comps added yet.</p>
-        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4 bg-slate-50 border border-slate-200 rounded-md p-3">
+          <Field label="Proximity (miles)">
+            <select
+              className="rvc-input"
+              value={deal.compsFilter?.proximityMiles ?? 25}
+              onChange={(e) => updateFilter({ proximityMiles: Number(e.target.value) })}
+            >
+              <option value="5">Within 5 mi</option>
+              <option value="10">Within 10 mi</option>
+              <option value="25">Within 25 mi</option>
+              <option value="50">Within 50 mi</option>
+            </select>
+          </Field>
+          <Field label="Vintage (± years)">
+            <select
+              className="rvc-input"
+              value={deal.compsFilter?.vintageYears ?? 10}
+              onChange={(e) => updateFilter({ vintageYears: Number(e.target.value) })}
+            >
+              <option value="5">± 5 years</option>
+              <option value="10">± 10 years</option>
+              <option value="15">± 15 years</option>
+              <option value="20">± 20 years</option>
+            </select>
+          </Field>
+          <Field label="Sold Within">
+            <select
+              className="rvc-input"
+              value={deal.compsFilter?.soldWithinYears ?? 3}
+              onChange={(e) => updateFilter({ soldWithinYears: Number(e.target.value) })}
+            >
+              <option value="1">Last 1 year</option>
+              <option value="2">Last 2 years</option>
+              <option value="3">Last 3 years</option>
+              <option value="4">Last 4 years</option>
+              <option value="5">Last 5 years</option>
+            </select>
+          </Field>
+        </div>
+
+        {(() => {
+          const all = deal.salesComps || [];
+          const matching = filterComps(all, deal.compsFilter, deal.yearBuilt);
+          return (
+            <p className="text-xs text-slate-600 mb-3">
+              {all.length === 0
+                ? 'No comps added yet — click "+ Add Comp" to start, or paste from CoStar.'
+                : `Showing ${matching.length} of ${all.length} comps matching the filter criteria.`}
+            </p>
+          );
+        })()}
+
         <div className="space-y-3">
           {(deal.salesComps || []).map((comp, idx) => {
             const ppu = comp.units > 0 ? comp.price / comp.units : 0;
+            const matching = filterComps([comp], deal.compsFilter, deal.yearBuilt).length > 0;
             return (
               <div
                 key={idx}
-                className="grid grid-cols-1 md:grid-cols-12 gap-2 items-end border border-slate-200 rounded-md p-3"
+                className={`grid grid-cols-1 md:grid-cols-12 gap-2 items-end border rounded-md p-3 ${
+                  matching ? 'border-slate-200 bg-white' : 'border-slate-200 bg-slate-50 opacity-60'
+                }`}
               >
-                <div className="md:col-span-4">
-                  <label className="rvc-label">Address / Name</label>
+                <div className="md:col-span-6">
+                  <label className="rvc-label">Address</label>
                   <input
                     className="rvc-input"
                     value={comp.address || ''}
                     onChange={(e) => updateComp(idx, { address: e.target.value })}
-                    placeholder="100 Park Ave"
+                    placeholder="100 Park Ave, City, ST"
                   />
                 </div>
-                <div className="md:col-span-2">
+                <div className="md:col-span-3">
+                  <label className="rvc-label">Year Built</label>
+                  <NumberInput
+                    value={comp.yearBuilt}
+                    onChange={(v) => updateComp(idx, { yearBuilt: Math.max(0, v || 0) })}
+                  />
+                </div>
+                <div className="md:col-span-3">
+                  <label className="rvc-label">Distance (mi)</label>
+                  <NumberInput
+                    value={comp.distance}
+                    onChange={(v) => updateComp(idx, { distance: Math.max(0, v || 0) })}
+                    step="0.1"
+                  />
+                </div>
+
+                <div className="md:col-span-3">
                   <label className="rvc-label">Date Sold</label>
                   <input
                     type="date"
@@ -348,27 +437,46 @@ export default function DealForm({ deal, setDeal, suggestedExitCap }) {
                     onChange={(e) => updateComp(idx, { dateSold: e.target.value })}
                   />
                 </div>
-                <div className="md:col-span-2">
+                <div className="md:col-span-3">
                   <label className="rvc-label">Price ($)</label>
                   <NumberInput
                     value={comp.price}
                     onChange={(v) => updateComp(idx, { price: v })}
                   />
                 </div>
-                <div className="md:col-span-2">
+                <div className="md:col-span-3">
                   <label className="rvc-label">Units</label>
                   <NumberInput
                     value={comp.units}
                     onChange={(v) => updateComp(idx, { units: v })}
                   />
                 </div>
-                <div className="md:col-span-1">
+                <div className="md:col-span-3">
                   <label className="rvc-label">$/Unit</label>
                   <div className="text-sm text-slate-ink tabular-nums py-2">
                     {fmtCurrency(ppu)}
                   </div>
                 </div>
-                <div className="md:col-span-1 flex justify-end">
+
+                <div className="md:col-span-5">
+                  <label className="rvc-label">Seller</label>
+                  <input
+                    className="rvc-input"
+                    value={comp.seller || ''}
+                    onChange={(e) => updateComp(idx, { seller: e.target.value })}
+                    placeholder="Seller name"
+                  />
+                </div>
+                <div className="md:col-span-5">
+                  <label className="rvc-label">Buyer</label>
+                  <input
+                    className="rvc-input"
+                    value={comp.buyer || ''}
+                    onChange={(e) => updateComp(idx, { buyer: e.target.value })}
+                    placeholder="Buyer name"
+                  />
+                </div>
+                <div className="md:col-span-2 flex justify-end">
                   <button
                     type="button"
                     onClick={() => removeComp(idx)}

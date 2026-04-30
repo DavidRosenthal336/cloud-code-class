@@ -5,6 +5,7 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import Anthropic from '@anthropic-ai/sdk';
+import { filterComps as filterCompsServerSide } from './src/lib/comps.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProd = process.env.NODE_ENV === 'production';
@@ -133,12 +134,22 @@ function buildMemoPrompt(inputs, metrics, projections) {
     )
     .join('\n');
 
+  const filtered = filterCompsServerSide(
+    inputs.salesComps,
+    inputs.compsFilter,
+    inputs.yearBuilt
+  );
+  const f = inputs.compsFilter || {};
   const compsSection =
-    Array.isArray(inputs.salesComps) && inputs.salesComps.length > 0
-      ? `\nSALES COMPS (similar properties sold within last 3 years)\n${inputs.salesComps
+    filtered.length > 0
+      ? `\nSALES COMPS (within ${f.proximityMiles || 25} mi, ± ${f.vintageYears || 10} yr vintage, sold within last ${f.soldWithinYears || 3} yr)\n${filtered
           .map((c) => {
             const ppu = c.units > 0 ? c.price / c.units : 0;
-            return `- ${c.address || 'Unnamed'} (${c.dateSold || 'date unknown'}): ${dollars(c.price)} total, ${dollars(ppu)}/unit (${c.units || 0} units)`;
+            const parties =
+              c.seller || c.buyer ? ` — ${c.seller || '?'} → ${c.buyer || '?'}` : '';
+            const vintage = c.yearBuilt ? `, built ${c.yearBuilt}` : '';
+            const dist = c.distance ? `, ${c.distance} mi` : '';
+            return `- ${c.address || 'Unnamed'} (${c.dateSold || 'date unknown'}${vintage}${dist}): ${dollars(c.price)} / ${c.units || 0} units = ${dollars(ppu)}/unit${parties}`;
           })
           .join('\n')}\n`
       : '';

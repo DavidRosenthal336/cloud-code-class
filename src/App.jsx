@@ -16,6 +16,7 @@ const DEFAULT_DEAL = {
   assetClass: 'multifamily',
   units: 50,
   squareFootage: 0,
+  yearBuilt: 1990,
   purchasePrice: 10_000_000,
   grossRent: 1_200_000,
   vacancyRate: 0.05,
@@ -54,6 +55,11 @@ const DEFAULT_DEAL = {
     premiumPerUnit: 200,
   },
   salesComps: [],
+  compsFilter: {
+    proximityMiles: 25,
+    vintageYears: 10,
+    soldWithinYears: 3,
+  },
 };
 
 export default function App() {

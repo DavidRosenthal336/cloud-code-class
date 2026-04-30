@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 import { fmtCurrency, fmtPercent, fmtMultiple, fmtRatio } from './format.js';
+import { filterComps } from './comps.js';
 
 const NAVY = '#0A1F44';
 const GOLD = '#B08D57';
@@ -72,23 +73,37 @@ export async function exportMemoPDF({ inputs, metrics, projections, sensitivity,
     ]),
   });
 
-  // Sales Comps
-  if (Array.isArray(inputs.salesComps) && inputs.salesComps.length > 0) {
+  // Sales Comps — only those matching the filter criteria
+  const filteredComps = filterComps(inputs.salesComps, inputs.compsFilter, inputs.yearBuilt);
+  if (filteredComps.length > 0) {
     y = doc.lastAutoTable.finalY + 24;
     sectionHeading(doc, 'Sales Comps', margin, y);
+    const f = inputs.compsFilter || {};
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor('#64748b');
+    doc.text(
+      `Filters: within ${f.proximityMiles || 25} mi · ± ${f.vintageYears || 10} yr vintage · sold within last ${f.soldWithinYears || 3} yr`,
+      margin,
+      y + 14
+    );
     autoTable(doc, {
-      startY: y + 4,
+      startY: y + 22,
       margin: { left: margin, right: margin },
       theme: 'striped',
-      styles: { font: 'helvetica', fontSize: 9, cellPadding: 4 },
+      styles: { font: 'helvetica', fontSize: 8, cellPadding: 3 },
       headStyles: { fillColor: NAVY, textColor: '#ffffff', fontStyle: 'bold' },
-      head: [['Property', 'Date Sold', 'Price', 'Units', '$/Unit']],
-      body: inputs.salesComps.map((c) => [
+      head: [['Address', 'Yr Built', 'Dist (mi)', 'Date Sold', 'Price', 'Units', '$/Unit', 'Seller', 'Buyer']],
+      body: filteredComps.map((c) => [
         c.address || '—',
+        c.yearBuilt ? String(c.yearBuilt) : '—',
+        c.distance ? c.distance.toString() : '—',
         c.dateSold || '—',
         fmtCurrency(c.price),
         String(c.units || 0),
         fmtCurrency(c.units > 0 ? c.price / c.units : 0),
+        c.seller || '—',
+        c.buyer || '—',
       ]),
     });
   }
