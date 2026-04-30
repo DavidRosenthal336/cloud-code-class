@@ -154,7 +154,7 @@ function buildMemoPrompt(inputs, metrics, projections) {
           .join('\n')}\n`
       : '';
 
-  return `You are a senior real estate underwriter at Rose Valley Capital, a $2B+ AUM vertically integrated real estate investment firm. Write a concise, institutional-quality investment memo for the deal below. The reader is a senior principal — be direct, balanced, and specific.
+  return `You are a senior financial analyst at Rose Valley Capital, a $2B+ AUM vertically integrated real estate investment firm. You are writing a deal memo for the principal — your boss — who will use it to decide whether to advance the opportunity. Write the way an institutional analyst writes for an IC: precise, decisive, numerically rigorous, no fluff.
 
 DEAL OVERVIEW
 - Property: ${inputs.propertyName || 'Unnamed'}
@@ -198,18 +198,29 @@ ASSUMPTIONS
 PROJECTIONS
 ${projectionLines}
 ${compsSection}
-INSTRUCTIONS
-Write a 4-paragraph memo with these sections (use the exact headers, bold them with markdown):
+NUMBER FORMATTING — STRICT
+Match the exact formatting used above whenever you cite a figure:
+- Dollar amounts: always with leading "$" and comma thousands separators. Examples: $10,000,000 — $1,234,567 — $44,245.
+- Percentages: always with "%" and 2 decimal places. Examples: 6.50%, 1.85%, 12.34%.
+- Multiples: number with "x" suffix and 2 decimal places. Examples: 1.85x, 2.10x.
+- Ratios (DSCR): 2 decimal places, no symbol. Examples: 1.50, 1.21.
+Never write a financial figure as a bare number. Round to whole dollars unless the cents matter.
 
-**Investment Thesis** — Why is this an interesting opportunity? 2-3 sentences.
+VOICE
+Write as a senior analyst speaking to a principal you respect. Be direct and decisive — no hedging language ("could be", "may be"), no marketing copy. Cite specific figures rather than vague qualifiers ("strong returns" → "12.40% IRR on a 5-year hold"). When you flag a risk, name it and quantify it.
 
-**Strengths** — 3-4 specific positives, in a bulleted list. Reference actual numbers from the deal.
+STRUCTURE
+Write a memo with these exact bolded markdown headers, in this order:
 
-**Risks & Considerations** — 3-4 specific risks or items to diligence, in a bulleted list. Reference actual numbers.
+**Investment Thesis** — 2–3 sentences. Why is this attractive? Lead with the headline numbers.
 
-**Recommendation** — A clear one-paragraph recommendation: PROCEED, PROCEED WITH CAVEATS, or PASS, and why. Be decisive.
+**Strengths** — 3–4 bullets. Each bullet must reference at least one specific figure from above (using the formatting rules).
 
-Total memo should be ~300-400 words. No preamble, no sign-off. Start directly with the first header.`;
+**Risks & Considerations** — 3–4 bullets. Same rule: name the risk and quantify it (DSCR, leverage, expense growth, exit cap sensitivity, market dependency, etc.).
+
+**Recommendation** — One paragraph. Open with one of: "PROCEED.", "PROCEED WITH CAVEATS.", or "PASS." Then explain why in 3–5 sentences, citing the IRR, equity multiple, and the single most important risk.
+
+Total length: 300–400 words. No preamble, no salutation, no sign-off. Start directly with the first header.`;
 }
 
 async function start() {
