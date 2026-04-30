@@ -119,7 +119,7 @@ export default function DealForm({ deal, setDeal, suggestedExitCap }) {
       <Section title="Financials (Year 1)">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Field label="Gross Rental Income ($/yr)">
-            <NumberInput
+            <CurrencyInput
               value={deal.grossRent}
               onChange={(v) => update({ grossRent: v })}
             />
@@ -152,7 +152,7 @@ export default function DealForm({ deal, setDeal, suggestedExitCap }) {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {ITEMIZED_FIELDS.map(([key, label]) => (
                 <Field key={key} label={`${label} ($)`}>
-                  <NumberInput
+                  <CurrencyInput
                     value={deal.opex.itemized?.[key] ?? 0}
                     onChange={(v) => updateItemized({ [key]: v })}
                   />
@@ -174,7 +174,7 @@ export default function DealForm({ deal, setDeal, suggestedExitCap }) {
       <Section title="Loan">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Field label="Loan Amount ($)">
-            <NumberInput
+            <CurrencyInput
               value={deal.loanAmount}
               onChange={(v) => update({ loanAmount: v })}
             />
@@ -206,7 +206,7 @@ export default function DealForm({ deal, setDeal, suggestedExitCap }) {
       <Section title="Assumptions">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Field label="Purchase Price ($)">
-            <NumberInput
+            <CurrencyInput
               value={deal.purchasePrice}
               onChange={(v) => update({ purchasePrice: v })}
             />
@@ -220,13 +220,13 @@ export default function DealForm({ deal, setDeal, suggestedExitCap }) {
             />
           </Field>
           <Field label="Capital Improvements ($)">
-            <NumberInput
+            <CurrencyInput
               value={deal.capitalImprovements}
               onChange={(v) => update({ capitalImprovements: v })}
             />
           </Field>
           <Field label="Working Capital ($)">
-            <NumberInput
+            <CurrencyInput
               value={deal.workingCapital}
               onChange={(v) => update({ workingCapital: v })}
             />
@@ -307,14 +307,14 @@ export default function DealForm({ deal, setDeal, suggestedExitCap }) {
               />
             </Field>
             <Field label="Avg Cost per Unit ($)">
-              <NumberInput
+              <CurrencyInput
                 value={deal.valueAdd.costPerUnit}
                 onChange={(v) => updateValueAdd({ costPerUnit: Math.max(0, v || 0) })}
-                placeholder="15000"
+                placeholder="15,000"
               />
             </Field>
             <Field label="Avg Rent Premium per Unit ($/mo)">
-              <NumberInput
+              <CurrencyInput
                 value={deal.valueAdd.premiumPerUnit}
                 onChange={(v) => updateValueAdd({ premiumPerUnit: Math.max(0, v || 0) })}
                 placeholder="200"
@@ -439,7 +439,7 @@ export default function DealForm({ deal, setDeal, suggestedExitCap }) {
                 </div>
                 <div className="md:col-span-3">
                   <label className="rvc-label">Price ($)</label>
-                  <NumberInput
+                  <CurrencyInput
                     value={comp.price}
                     onChange={(v) => updateComp(idx, { price: v })}
                   />
@@ -530,6 +530,29 @@ function NumberInput({ value, onChange, placeholder, step = '1' }) {
         onChange(v === '' ? 0 : Number(v));
       }}
       placeholder={placeholder}
+    />
+  );
+}
+
+// Currency input: live $ and comma formatting. Stores a plain number in state;
+// only the displayed string carries the $ and commas. Stripping non-digits in
+// onChange keeps cursor behaviour predictable on right-aligned numerals.
+function CurrencyInput({ value, onChange, placeholder }) {
+  const display =
+    !value || !Number.isFinite(Number(value))
+      ? ''
+      : '$' + Math.round(Number(value)).toLocaleString('en-US');
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      className="rvc-input text-right tabular-nums"
+      value={display}
+      onChange={(e) => {
+        const raw = e.target.value.replace(/[^\d]/g, '');
+        onChange(raw === '' ? 0 : Number(raw));
+      }}
+      placeholder={placeholder ? '$' + placeholder : '$0'}
     />
   );
 }
