@@ -10,32 +10,53 @@ import ExportButton from './components/ExportButton.jsx';
 import LoginScreen from './components/LoginScreen.jsx';
 import { runUnderwrite, capRate, effectiveGrossIncome, operatingExpenses } from './lib/financials.js';
 
+const DEFAULT_ITEMIZED = {
+  contracts: 30_000,
+  payroll: 60_000,
+  repairsAndMaintenance: 50_000,
+  administrative: 25_000,
+  management: 50_000,
+  utilities: 30_000,
+  reTaxes: 120_000,
+  insurance: 25_000,
+  marketing: 15_000,
+  turnover: 20_000,
+};
+
 const DEFAULT_DEAL = {
+  // Property + OM details
   propertyName: 'The Heights at Crown',
   address: '425 Crown St, Brooklyn, NY 11225',
   assetClass: 'multifamily',
   units: 50,
   squareFootage: 0,
   yearBuilt: 1990,
+  yearRenovated: 0,
+  numBuildings: 1,
+  numStories: 6,
+  lotSizeSF: 0,
+  grossBuildingSF: 0,
+  parkingSpaces: 0,
+  amenities: '',
+  lastSalePrice: 0,
+  lastSaleDate: '',
+
   purchasePrice: 10_000_000,
-  grossRent: 1_200_000,
-  vacancyRate: 0.05,
-  opex: {
-    mode: 'itemized',
-    percent: 0.35,
-    itemized: {
-      contracts: 30_000,
-      payroll: 60_000,
-      repairsAndMaintenance: 50_000,
-      administrative: 25_000,
-      management: 50_000,
-      utilities: 30_000,
-      reTaxes: 120_000,
-      insurance: 25_000,
-      marketing: 15_000,
-      turnover: 20_000,
-    },
+
+  // Trailing-12-months snapshot — actual current operating data
+  t12: {
+    grossRent: 1_200_000,
+    vacancyRate: 0.05,
+    opex: { mode: 'itemized', percent: 0.35, itemized: { ...DEFAULT_ITEMIZED } },
   },
+  // Optional Year-1 projection — when toggled on, drives the multi-year projection
+  useProjectedYearOne: false,
+  yearOne: {
+    grossRent: 1_200_000,
+    vacancyRate: 0.05,
+    opex: { mode: 'itemized', percent: 0.35, itemized: { ...DEFAULT_ITEMIZED } },
+  },
+
   loanAmount: 7_000_000,
   interestRate: 0.065,
   amortYears: 30,
@@ -87,10 +108,11 @@ export default function App() {
 
   const result = useMemo(() => runUnderwrite(deal), [deal]);
 
-  // Suggested exit cap = going-in + 50bps, displayed as a hint near the exit cap input.
+  // Suggested exit cap = going-in + 50bps, computed from T12 NOI.
   const suggestedExitCap = useMemo(() => {
-    const egi = effectiveGrossIncome(deal.grossRent, deal.vacancyRate);
-    const opex = operatingExpenses(deal.opex, egi);
+    const t12 = deal.t12 || {};
+    const egi = effectiveGrossIncome(t12.grossRent || 0, t12.vacancyRate || 0);
+    const opex = operatingExpenses(t12.opex || { mode: 'percent', percent: 0 }, egi);
     const noiY1 = egi - opex;
     return capRate(noiY1, deal.purchasePrice) + 0.005;
   }, [deal]);

@@ -199,6 +199,7 @@ function sectionHeading(doc, title, x, y) {
 }
 
 function investmentSummaryRows(inputs) {
+  const start = inputs.useProjectedYearOne && inputs.yearOne ? inputs.yearOne : inputs.t12;
   const rows = [
     ['Property', inputs.propertyName || '—'],
     ['Address', inputs.address || '—'],
@@ -209,6 +210,19 @@ function investmentSummaryRows(inputs) {
         ? `${inputs.units || 0} units`
         : `${(inputs.squareFootage || 0).toLocaleString()} SF`,
     ],
+    ...(inputs.yearBuilt ? [['Year Built', String(inputs.yearBuilt)]] : []),
+    ...(inputs.yearRenovated ? [['Year Renovated', String(inputs.yearRenovated)]] : []),
+    ...(inputs.numBuildings ? [['Buildings', String(inputs.numBuildings)]] : []),
+    ...(inputs.numStories ? [['Stories', String(inputs.numStories)]] : []),
+    ...(inputs.grossBuildingSF
+      ? [['Gross Building Area', `${inputs.grossBuildingSF.toLocaleString()} SF`]]
+      : []),
+    ...(inputs.lotSizeSF ? [['Lot Size', `${inputs.lotSizeSF.toLocaleString()} SF`]] : []),
+    ...(inputs.parkingSpaces ? [['Parking Spaces', String(inputs.parkingSpaces)]] : []),
+    ...(inputs.amenities ? [['Amenities', inputs.amenities]] : []),
+    ...(inputs.lastSalePrice
+      ? [['Last Sale', `${fmtCurrency(inputs.lastSalePrice)}${inputs.lastSaleDate ? ' on ' + inputs.lastSaleDate : ''}`]]
+      : []),
     ['Purchase Price', fmtCurrency(inputs.purchasePrice)],
     ['Closing Costs', fmtPercent(inputs.closingCostsPct)],
     ['Capital Improvements', fmtCurrency(inputs.capitalImprovements)],
@@ -218,7 +232,11 @@ function investmentSummaryRows(inputs) {
     ['Amortization', `${inputs.amortYears} years`],
     ['Interest-Only Period', `${inputs.ioPeriodYears || 0} years`],
     ['Hold Period', `${inputs.holdPeriod} years`],
-    ['Vacancy Rate', fmtPercent(inputs.vacancyRate)],
+    [
+      'Year-1 Basis',
+      inputs.useProjectedYearOne ? 'User-projected Year 1' : 'In-place / T12',
+    ],
+    ['Vacancy Rate (start)', fmtPercent(start?.vacancyRate)],
     ['Rent Growth', fmtPercent(inputs.rentGrowth)],
     ['Expense Increase Rate', fmtPercent(inputs.expenseGrowth)],
     ['Exit Cap Rate', fmtPercent(inputs.exitCapRate)],

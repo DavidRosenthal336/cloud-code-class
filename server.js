@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import express from 'express';
 import cookieParser from 'cookie-parser';
+import multer from 'multer';
+import * as XLSX from 'xlsx';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'url';
 import path from 'path';
@@ -189,8 +191,16 @@ FINANCIAL METRICS
 - Exit value: ${dollars(metrics.exitValue)}
 - Sale proceeds: ${dollars(metrics.saleProceeds)}
 
+YEAR-1 BASIS
+- Mode: ${inputs.useProjectedYearOne ? 'User-projected Year 1 drives the multi-year forecast' : 'In-place / T12 drives the multi-year forecast'}
+- T12 gross rent: ${dollars(inputs.t12?.grossRent)} (vacancy ${pct(inputs.t12?.vacancyRate)})${
+    inputs.useProjectedYearOne
+      ? `
+- Year-1 projected gross rent: ${dollars(inputs.yearOne?.grossRent)} (vacancy ${pct(inputs.yearOne?.vacancyRate)})`
+      : ''
+  }
+
 ASSUMPTIONS
-- Vacancy: ${pct(inputs.vacancyRate)}
 - Rent growth: ${pct(inputs.rentGrowth)}
 - Expense increase rate: ${pct(inputs.expenseGrowth)}
 - Exit cap rate: ${pct(inputs.exitCapRate)}
@@ -229,6 +239,140 @@ Write a memo with these exact bolded markdown headers, in this order:
 **Recommendation** — One paragraph. Open with one of: "PROCEED.", "PROCEED WITH CAVEATS.", or "PASS." Then explain why in 3–5 sentences, citing the IRR, equity multiple, and the single most important risk.
 
 Total length: 300–400 words. No preamble, no salutation, no sign-off. Start directly with the first header.`;
+}
+
+// --- Document extraction endpoint (T12 Excel + OM PDF) ---
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB
+});
+
+app.post('/api/extract', requireAuth, upload.single('file'), async (req, res) => {
+  if (!anthropic) {
+    return res.status(500).json({
+      error: 'ANTHROPIC_API_KEY not configured.',
+    });
+  }
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
+  const kind = (req.body.kind || '').toString();
+  if (kind !== 't12' && kind !== 'om') {
+    return res.status(400).json({ error: 'kind must be t12 or om.' });
+  }
+
+  try {
+    let messageContent;
+
+    if (kind === 't12') {
+      // Parse Excel/CSV server-side, send extracted text to Claude
+      const wb = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const sheetTexts = wb.SheetNames.map((name) => {
+        const sheet = wb.Sheets[name];
+        const csv = XLSX.utils.sheet_to_csv(sheet);
+        return `--- SHEET: ${name} ---\n${csv}`;
+      }).join('\n\n');
+      messageContent = [
+        {
+          type: 'text',
+          text: buildExtractPrompt('t12') + '\n\nDOCUMENT CONTENT:\n' + sheetTexts,
+        },
+      ];
+    } else {
+      // PDF: pass directly via document content block
+      const b64 = req.file.buffer.toString('base64');
+      messageContent = [
+        {
+          type: 'document',
+          source: { type: 'base64', media_type: 'application/pdf', data: b64 },
+        },
+        { type: 'text', text: buildExtractPrompt('om') },
+      ];
+    }
+
+    const response = await anthropic.messages.create({
+      model: 'claude-opus-4-7',
+      max_tokens: 2000,
+      messages: [{ role: 'user', content: messageContent }],
+    });
+    const text = response.content
+      .filter((b) => b.type === 'text')
+      .map((b) => b.text)
+      .join('\n');
+
+    const fields = parseExtractionJSON(text);
+    res.json({ fields });
+  } catch (err) {
+    console.error('Extract error:', err);
+    res.status(500).json({ error: err.message || 'Extraction failed.' });
+  }
+});
+
+function buildExtractPrompt(kind) {
+  const t12Schema = `
+Return ONLY a JSON object inside a \`\`\`json fenced block. Extract only fields you find with high confidence — omit any field you cannot confidently identify. Do NOT guess.
+
+If this is a T12 (trailing-12-months) operating statement, extract:
+{
+  "t12": {
+    "grossRent": <number, total annual gross rental income>,
+    "vacancyRate": <decimal, e.g. 0.05 for 5%>,
+    "opex": {
+      "mode": "itemized",
+      "itemized": {
+        "contracts": <number>,
+        "payroll": <number>,
+        "repairsAndMaintenance": <number>,
+        "administrative": <number>,
+        "management": <number>,
+        "utilities": <number>,
+        "reTaxes": <number>,
+        "insurance": <number>,
+        "marketing": <number>,
+        "turnover": <number>
+      }
+    }
+  }
+}
+Map the T12 line items to the closest of these 10 categories. Combine sub-line-items into the parent category where appropriate (e.g., trash + water + electric → utilities). Use whole-dollar annual totals.`;
+
+  const omSchema = `
+Return ONLY a JSON object inside a \`\`\`json fenced block. Extract only fields you find with high confidence — omit any field you cannot confidently identify. Do NOT guess.
+
+If this is an Offering Memorandum, extract any of these top-level fields you find:
+{
+  "propertyName": <string>,
+  "address": <string>,
+  "assetClass": <"multifamily" | "office" | "retail" | "industrial" | "coworking">,
+  "units": <number, only for multifamily>,
+  "squareFootage": <number, only for non-multifamily>,
+  "yearBuilt": <number>,
+  "yearRenovated": <number>,
+  "numBuildings": <number>,
+  "numStories": <number>,
+  "lotSizeSF": <number>,
+  "grossBuildingSF": <number>,
+  "parkingSpaces": <number>,
+  "amenities": <string, comma-separated list>,
+  "lastSalePrice": <number>,
+  "lastSaleDate": <"YYYY-MM-DD">,
+  "purchasePrice": <number, the asking price>,
+  "loanAmount": <number, only if disclosed>,
+  "interestRate": <decimal, only if disclosed>
+}`;
+
+  return `You are an extraction tool. ${kind === 't12' ? t12Schema : omSchema}\n\nIf no fields can be extracted, return: \`\`\`json\n{}\n\`\`\``;
+}
+
+function parseExtractionJSON(text) {
+  if (!text) return {};
+  // Pull the first ```json ... ``` block, fallback to whole text
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  const raw = fenced ? fenced[1] : text;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
 }
 
 async function start() {

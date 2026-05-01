@@ -144,19 +144,32 @@ export function totalEquity(deal) {
   return downPayment + closingCosts + capex + wc + va;
 }
 
+// Returns the operating snapshot used as the year-1 starting point for the
+// multi-year projection. If the user has toggled "Add Year One" on and
+// supplied projected first-year numbers, those are used; otherwise we use the
+// T12 (trailing-12-months) snapshot.
+export function getStartingPoint(deal) {
+  if (deal.useProjectedYearOne && deal.yearOne) return deal.yearOne;
+  return deal.t12 || {};
+}
+
 // --- Projections ---
 
 export function projectYears(deal, years = 10) {
   const out = [];
   let cumulative = 0;
-  const opexY1 = operatingExpenses(deal.opex, effectiveGrossIncome(deal.grossRent, deal.vacancyRate));
+  const start = getStartingPoint(deal);
+  const baseRent = start.grossRent || 0;
+  const vacancy = start.vacancyRate || 0;
+  const opexInput = start.opex || { mode: 'percent', percent: 0 };
+  const opexY1 = operatingExpenses(opexInput, effectiveGrossIncome(baseRent, vacancy));
   const expenseGrowth = deal.expenseGrowth ?? 0.025;
   for (let y = 1; y <= years; y++) {
-    const growthFactor = Math.pow(1 + deal.rentGrowth, y - 1);
-    const baseRent = deal.grossRent * growthFactor;
+    const growthFactor = Math.pow(1 + (deal.rentGrowth || 0), y - 1);
+    const grownBaseRent = baseRent * growthFactor;
     const premiumRent = valueAddPremiumForYear(deal, y) * growthFactor;
-    const grossRent = baseRent + premiumRent;
-    const egi = effectiveGrossIncome(grossRent, deal.vacancyRate);
+    const grossRent = grownBaseRent + premiumRent;
+    const egi = effectiveGrossIncome(grossRent, vacancy);
     const opex = opexY1 * Math.pow(1 + expenseGrowth, y - 1);
     const noiY = egi - opex;
     const debtService = annualDebtServiceForYear(deal, y);
@@ -174,6 +187,21 @@ export function projectYears(deal, years = 10) {
     });
   }
   return out;
+}
+
+// T12 snapshot metrics (always computed from deal.t12, regardless of toggle).
+// Useful for displaying T12 NOI / cap rate alongside the projection start.
+export function t12Snapshot(deal) {
+  const t12 = deal.t12 || {};
+  const egi = effectiveGrossIncome(t12.grossRent || 0, t12.vacancyRate || 0);
+  const opex = operatingExpenses(t12.opex || { mode: 'percent', percent: 0 }, egi);
+  return {
+    grossRent: t12.grossRent || 0,
+    egi,
+    opex,
+    noi: egi - opex,
+    capRate: capRate(egi - opex, deal.purchasePrice),
+  };
 }
 
 export function exitValue(noiYearAfterExit, exitCapRate) {

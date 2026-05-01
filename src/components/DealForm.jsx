@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import { totalItemizedExpenses } from '../lib/financials.js';
 import { filterComps } from '../lib/comps.js';
 import { fmtCurrency } from '../lib/format.js';
@@ -19,11 +20,27 @@ const ITEMIZED_FIELDS = [
 
 export default function DealForm({ deal, setDeal, suggestedExitCap }) {
   const update = (patch) => setDeal({ ...deal, ...patch });
-  const updateOpex = (patch) => setDeal({ ...deal, opex: { ...deal.opex, ...patch } });
-  const updateItemized = (patch) =>
+  // Side-aware updaters: side is 't12' or 'yearOne'
+  const updateSide = (side, patch) =>
+    setDeal({ ...deal, [side]: { ...deal[side], ...patch } });
+  const updateSideOpex = (side, patch) =>
     setDeal({
       ...deal,
-      opex: { ...deal.opex, itemized: { ...deal.opex.itemized, ...patch } },
+      [side]: {
+        ...deal[side],
+        opex: { ...(deal[side]?.opex || {}), ...patch },
+      },
+    });
+  const updateSideItemized = (side, patch) =>
+    setDeal({
+      ...deal,
+      [side]: {
+        ...deal[side],
+        opex: {
+          ...(deal[side]?.opex || {}),
+          itemized: { ...(deal[side]?.opex?.itemized || {}), ...patch },
+        },
+      },
     });
   const updateValueAdd = (patch) =>
     setDeal({ ...deal, valueAdd: { ...deal.valueAdd, ...patch } });
@@ -59,8 +76,6 @@ export default function DealForm({ deal, setDeal, suggestedExitCap }) {
     setDeal({ ...deal, compsFilter: { ...deal.compsFilter, ...patch } });
 
   const isMultifamily = deal.assetClass === 'multifamily';
-  const itemizedTotal = totalItemizedExpenses(deal.opex.itemized);
-
   return (
     <div className="space-y-6">
       <Section title="Property">
@@ -113,62 +128,108 @@ export default function DealForm({ deal, setDeal, suggestedExitCap }) {
               placeholder="1990"
             />
           </Field>
+          <Field label="Year Renovated">
+            <NumberInput
+              value={deal.yearRenovated}
+              onChange={(v) => update({ yearRenovated: Math.max(0, v || 0) })}
+              placeholder="—"
+            />
+          </Field>
+          <Field label="Number of Buildings">
+            <NumberInput
+              value={deal.numBuildings}
+              onChange={(v) => update({ numBuildings: Math.max(0, v || 0) })}
+              placeholder="1"
+            />
+          </Field>
+          <Field label="Number of Stories">
+            <NumberInput
+              value={deal.numStories}
+              onChange={(v) => update({ numStories: Math.max(0, v || 0) })}
+              placeholder="6"
+            />
+          </Field>
+          <Field label="Lot Size (SF)">
+            <NumberInput
+              value={deal.lotSizeSF}
+              onChange={(v) => update({ lotSizeSF: Math.max(0, v || 0) })}
+            />
+          </Field>
+          <Field label="Gross Building Area (SF)">
+            <NumberInput
+              value={deal.grossBuildingSF}
+              onChange={(v) => update({ grossBuildingSF: Math.max(0, v || 0) })}
+            />
+          </Field>
+          <Field label="Parking Spaces">
+            <NumberInput
+              value={deal.parkingSpaces}
+              onChange={(v) => update({ parkingSpaces: Math.max(0, v || 0) })}
+            />
+          </Field>
+          <Field label="Last Sale Price ($)">
+            <CurrencyInput
+              value={deal.lastSalePrice}
+              onChange={(v) => update({ lastSalePrice: v })}
+            />
+          </Field>
+          <Field label="Last Sale Date">
+            <input
+              type="date"
+              className="rvc-input"
+              value={deal.lastSaleDate || ''}
+              onChange={(e) => update({ lastSaleDate: e.target.value })}
+            />
+          </Field>
+          <div className="md:col-span-2">
+            <label className="rvc-label">Amenities</label>
+            <textarea
+              className="rvc-input"
+              rows="2"
+              value={deal.amenities || ''}
+              onChange={(e) => update({ amenities: e.target.value })}
+              placeholder="e.g. fitness center, roof deck, parking garage, in-unit W/D"
+            />
+          </div>
         </div>
       </Section>
 
-      <Section title="Financials (Year 1)">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label="Gross Rental Income ($/yr)">
-            <CurrencyInput
-              value={deal.grossRent}
-              onChange={(v) => update({ grossRent: v })}
-            />
-          </Field>
-          <Field label="Operating Expenses Mode">
-            <select
-              className="rvc-input"
-              value={deal.opex.mode}
-              onChange={(e) => updateOpex({ mode: e.target.value })}
-            >
-              <option value="itemized">Itemized</option>
-              <option value="percent">% of EGI</option>
-            </select>
-          </Field>
+      <Section title="Financials">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <FinancialsColumn
+            side="t12"
+            label="In-Place / T12"
+            sublabel="Trailing 12 months — actual current operating data"
+            data={deal.t12}
+            updateSide={updateSide}
+            updateSideOpex={updateSideOpex}
+            updateSideItemized={updateSideItemized}
+            mergeExtracted={(patch) => setDeal({ ...deal, ...patch })}
+            showUpload
+          />
+          <FinancialsColumn
+            side="yearOne"
+            label="Year 1 Projection"
+            sublabel="Your projected first ownership year — drives the multi-year forecast when enabled"
+            data={deal.yearOne}
+            updateSide={updateSide}
+            updateSideOpex={updateSideOpex}
+            updateSideItemized={updateSideItemized}
+            disabled={!deal.useProjectedYearOne}
+            toggleNode={
+              <select
+                className="rvc-input max-w-[140px]"
+                value={deal.useProjectedYearOne ? 'yes' : 'no'}
+                onChange={(e) =>
+                  setDeal({ ...deal, useProjectedYearOne: e.target.value === 'yes' })
+                }
+              >
+                <option value="no">Skip (use T12)</option>
+                <option value="yes">Add Year One</option>
+              </select>
+            }
+          />
         </div>
-
-        {deal.opex.mode === 'percent' ? (
-          <div className="mt-4">
-            <Field label="OpEx % of EGI">
-              <NumberInput
-                value={pctToInput(deal.opex.percent)}
-                onChange={(v) => updateOpex({ percent: inputToPct(v) })}
-                placeholder="35"
-                step="0.5"
-              />
-            </Field>
-          </div>
-        ) : (
-          <div className="mt-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {ITEMIZED_FIELDS.map(([key, label]) => (
-                <Field key={key} label={`${label} ($)`}>
-                  <CurrencyInput
-                    value={deal.opex.itemized?.[key] ?? 0}
-                    onChange={(v) => updateItemized({ [key]: v })}
-                  />
-                </Field>
-              ))}
-            </div>
-            <div className="mt-3 flex items-center justify-between bg-slate-50 border border-slate-200 rounded-md px-3 py-2">
-              <span className="text-xs uppercase tracking-wide text-slate-600 font-semibold">
-                Total Expenses
-              </span>
-              <span className="font-serif text-base text-navy tabular-nums">
-                {fmtCurrency(itemizedTotal)}
-              </span>
-            </div>
-          </div>
-        )}
       </Section>
 
       <Section title="Loan">
@@ -229,14 +290,6 @@ export default function DealForm({ deal, setDeal, suggestedExitCap }) {
             <CurrencyInput
               value={deal.workingCapital}
               onChange={(v) => update({ workingCapital: v })}
-            />
-          </Field>
-          <Field label="Vacancy Rate (%)">
-            <NumberInput
-              value={pctToInput(deal.vacancyRate)}
-              onChange={(v) => update({ vacancyRate: inputToPct(v) })}
-              placeholder="5"
-              step="0.1"
             />
           </Field>
           <Field label="Rent Growth (% / yr)">
@@ -494,6 +547,186 @@ export default function DealForm({ deal, setDeal, suggestedExitCap }) {
           + Add Comp
         </button>
       </Section>
+    </div>
+  );
+}
+
+function FinancialsColumn({
+  side,
+  label,
+  sublabel,
+  data,
+  updateSide,
+  updateSideOpex,
+  updateSideItemized,
+  disabled = false,
+  toggleNode,
+  showUpload = false,
+  mergeExtracted,
+}) {
+  const opex = data?.opex || { mode: 'itemized', percent: 0, itemized: {} };
+  const itemizedTotal = totalItemizedExpenses(opex.itemized);
+
+  return (
+    <div
+      className={`border rounded-md p-4 ${
+        disabled ? 'border-slate-200 bg-slate-50 opacity-60' : 'border-slate-300 bg-white'
+      }`}
+    >
+      <div className="flex items-start justify-between mb-3 border-b border-slate-200 pb-2">
+        <div>
+          <h3 className="font-serif text-base text-navy">{label}</h3>
+          <p className="text-[11px] text-slate-500 mt-0.5">{sublabel}</p>
+        </div>
+        {toggleNode}
+      </div>
+
+      {showUpload && <DocumentUploadBar mergeExtracted={mergeExtracted} />}
+
+      <fieldset disabled={disabled} className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <Field label="Gross Rental Income ($/yr)">
+            <CurrencyInput
+              value={data?.grossRent || 0}
+              onChange={(v) => updateSide(side, { grossRent: v })}
+            />
+          </Field>
+          <Field label="Vacancy Rate (%)">
+            <NumberInput
+              value={pctToInput(data?.vacancyRate)}
+              onChange={(v) => updateSide(side, { vacancyRate: inputToPct(v) })}
+              placeholder="5"
+              step="0.1"
+            />
+          </Field>
+          <div className="md:col-span-2">
+            <Field label="Operating Expenses Mode">
+              <select
+                className="rvc-input"
+                value={opex.mode}
+                onChange={(e) => updateSideOpex(side, { mode: e.target.value })}
+              >
+                <option value="itemized">Itemized</option>
+                <option value="percent">% of EGI</option>
+              </select>
+            </Field>
+          </div>
+        </div>
+
+        {opex.mode === 'percent' ? (
+          <Field label="OpEx % of EGI">
+            <NumberInput
+              value={pctToInput(opex.percent)}
+              onChange={(v) => updateSideOpex(side, { percent: inputToPct(v) })}
+              placeholder="35"
+              step="0.5"
+            />
+          </Field>
+        ) : (
+          <div>
+            <div className="grid grid-cols-2 gap-2">
+              {ITEMIZED_FIELDS.map(([key, lbl]) => (
+                <Field key={key} label={`${lbl} ($)`}>
+                  <CurrencyInput
+                    value={opex.itemized?.[key] ?? 0}
+                    onChange={(v) => updateSideItemized(side, { [key]: v })}
+                  />
+                </Field>
+              ))}
+            </div>
+            <div className="mt-3 flex items-center justify-between bg-slate-50 border border-slate-200 rounded-md px-3 py-2">
+              <span className="text-[11px] uppercase tracking-wide text-slate-600 font-semibold">
+                Total Expenses
+              </span>
+              <span className="font-serif text-base text-navy tabular-nums">
+                {fmtCurrency(itemizedTotal)}
+              </span>
+            </div>
+          </div>
+        )}
+      </fieldset>
+    </div>
+  );
+}
+
+function DocumentUploadBar({ mergeExtracted }) {
+  const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState(null);
+  const t12Ref = useRef(null);
+  const omRef = useRef(null);
+
+  const upload = async (kind, file) => {
+    if (!file) return;
+    setBusy(true);
+    setStatus(null);
+    try {
+      const fd = new FormData();
+      fd.append('kind', kind);
+      fd.append('file', file);
+      const res = await fetch('/api/extract', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Extraction failed');
+      mergeExtracted(data.fields || {});
+      const keys = Object.keys(data.fields || {});
+      setStatus({
+        ok: true,
+        msg: `Extracted ${keys.length} field${keys.length === 1 ? '' : 's'} from your ${kind === 't12' ? 'T12' : 'OM'}.`,
+      });
+    } catch (e) {
+      setStatus({ ok: false, msg: e.message });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mb-4 bg-navy-deep/5 border border-navy/20 rounded-md p-3">
+      <p className="text-[11px] uppercase tracking-wide text-navy font-semibold mb-2">
+        Auto-Fill from Documents
+      </p>
+      <p className="text-xs text-slate-600 mb-3">
+        Drop a T12 (Excel) and/or an OM (PDF). The tool reads the documents and fills the
+        T12 inputs and property details below. Verify everything before relying on it.
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <label className="rvc-btn-secondary cursor-pointer text-center">
+          <input
+            ref={t12Ref}
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            disabled={busy}
+            className="hidden"
+            onChange={(e) => {
+              upload('t12', e.target.files?.[0]);
+              if (t12Ref.current) t12Ref.current.value = '';
+            }}
+          />
+          {busy ? 'Reading…' : 'Upload T12 (Excel)'}
+        </label>
+        <label className="rvc-btn-secondary cursor-pointer text-center">
+          <input
+            ref={omRef}
+            type="file"
+            accept=".pdf"
+            disabled={busy}
+            className="hidden"
+            onChange={(e) => {
+              upload('om', e.target.files?.[0]);
+              if (omRef.current) omRef.current.value = '';
+            }}
+          />
+          {busy ? 'Reading…' : 'Upload OM (PDF)'}
+        </label>
+      </div>
+      {status && (
+        <p
+          className={`text-xs mt-2 ${
+            status.ok ? 'text-green-700' : 'text-red-700'
+          }`}
+        >
+          {status.msg}
+        </p>
+      )}
     </div>
   );
 }

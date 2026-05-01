@@ -39,9 +39,17 @@ const sampleDeal = {
   assetClass: 'multifamily',
   units: 50,
   purchasePrice: 10_000_000,
-  grossRent: 1_200_000,
-  vacancyRate: 0.05,
-  opex: { mode: 'itemized', percent: 0.35, itemized: sampleItemized },
+  t12: {
+    grossRent: 1_200_000,
+    vacancyRate: 0.05,
+    opex: { mode: 'itemized', percent: 0.35, itemized: sampleItemized },
+  },
+  useProjectedYearOne: false,
+  yearOne: {
+    grossRent: 1_200_000,
+    vacancyRate: 0.05,
+    opex: { mode: 'itemized', percent: 0.35, itemized: sampleItemized },
+  },
   loanAmount: 7_000_000,
   interestRate: 0.065,
   amortYears: 30,
@@ -168,7 +176,7 @@ describe('projectYears', () => {
   it('projects 10 years with rent and expense growth', () => {
     const p = projectYears(sampleDeal, 10);
     expect(p).toHaveLength(10);
-    expect(p[1].grossRent).toBeCloseTo(sampleDeal.grossRent * 1.03);
+    expect(p[1].grossRent).toBeCloseTo(sampleDeal.t12.grossRent * 1.03);
     // Y2 opex grows at expenseGrowth (2.5%)
     expect(p[1].opex / p[0].opex).toBeCloseTo(1.025, 4);
   });
@@ -205,6 +213,36 @@ describe('irr / equityMultiple', () => {
 
   it('computes equity multiple', () => {
     expect(equityMultiple([100, 100, 100], 1500, 1000)).toBe(1.8);
+  });
+});
+
+describe('T12 vs projected Year 1 starting point', () => {
+  it('uses T12 when useProjectedYearOne is false', () => {
+    const p = projectYears(sampleDeal, 1);
+    expect(p[0].grossRent).toBeCloseTo(sampleDeal.t12.grossRent);
+  });
+
+  it('uses Year 1 projection when useProjectedYearOne is true', () => {
+    const projected = {
+      ...sampleDeal,
+      useProjectedYearOne: true,
+      yearOne: {
+        ...sampleDeal.yearOne,
+        grossRent: 1_400_000, // user projects higher than T12
+      },
+    };
+    const p = projectYears(projected, 1);
+    expect(p[0].grossRent).toBeCloseTo(1_400_000);
+  });
+
+  it('multi-year projection grows from the chosen starting point', () => {
+    const projected = {
+      ...sampleDeal,
+      useProjectedYearOne: true,
+      yearOne: { ...sampleDeal.yearOne, grossRent: 1_500_000 },
+    };
+    const p = projectYears(projected, 3);
+    expect(p[1].grossRent).toBeCloseTo(1_500_000 * 1.03);
   });
 });
 
