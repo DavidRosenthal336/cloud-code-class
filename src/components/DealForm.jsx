@@ -656,18 +656,28 @@ function FinancialsColumn({
 function DocumentUploadBar({ kind, mergeExtracted }) {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState(null);
+  const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef(null);
 
   const accept = kind === 't12' ? '.xlsx,.xls,.csv' : '.pdf';
-  const buttonLabel = kind === 't12' ? 'Upload T12 (Excel)' : 'Upload OM (PDF)';
+  const acceptedExtensions = kind === 't12' ? ['xlsx', 'xls', 'csv'] : ['pdf'];
   const heading = kind === 't12' ? 'Auto-Fill T12 from Excel' : 'Auto-Fill from OM';
-  const description =
+  const dropHint =
     kind === 't12'
-      ? 'Drop a T12 operating statement (Excel/CSV). The tool reads it and fills the financial inputs below. Verify everything before relying on it.'
-      : 'Drop an Offering Memorandum (PDF). The tool reads it and fills the property details below. Verify everything before relying on it.';
+      ? 'Drop a T12 operating statement here (Excel / CSV)'
+      : 'Drop an Offering Memorandum here (PDF)';
+  const browseLabel = kind === 't12' ? 'browse for an Excel file' : 'browse for a PDF';
 
   const upload = async (file) => {
     if (!file) return;
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    if (!acceptedExtensions.includes(ext)) {
+      setStatus({
+        ok: false,
+        msg: `Unsupported file type ".${ext}". Use ${acceptedExtensions.join(', ')}.`,
+      });
+      return;
+    }
     setBusy(true);
     setStatus(null);
     try {
@@ -681,9 +691,7 @@ function DocumentUploadBar({ kind, mergeExtracted }) {
       const keys = Object.keys(data.fields || {});
       setStatus({
         ok: true,
-        msg: `Extracted ${keys.length} field${keys.length === 1 ? '' : 's'} from your ${
-          kind === 't12' ? 'T12' : 'OM'
-        }.`,
+        msg: `Extracted ${keys.length} field${keys.length === 1 ? '' : 's'} from "${file.name}".`,
       });
     } catch (e) {
       setStatus({ ok: false, msg: e.message });
@@ -692,26 +700,68 @@ function DocumentUploadBar({ kind, mergeExtracted }) {
     }
   };
 
+  const onDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+    const file = e.dataTransfer?.files?.[0];
+    if (file) upload(file);
+  };
+
   return (
-    <div className="mb-4 bg-navy-deep/5 border border-navy/20 rounded-md p-3">
-      <p className="text-[11px] uppercase tracking-wide text-navy font-semibold mb-2">
+    <div
+      onDragEnter={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!busy) setDragOver(true);
+      }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!busy) setDragOver(true);
+      }}
+      onDragLeave={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragOver(false);
+      }}
+      onDrop={onDrop}
+      onClick={() => !busy && inputRef.current?.click()}
+      className={`mb-4 rounded-md p-4 border-2 border-dashed cursor-pointer transition-colors ${
+        dragOver
+          ? 'border-navy bg-navy/10'
+          : busy
+          ? 'border-slate-300 bg-slate-50 cursor-wait'
+          : 'border-navy/30 bg-navy-deep/5 hover:bg-navy-deep/10 hover:border-navy/50'
+      }`}
+    >
+      <p className="text-[11px] uppercase tracking-wide text-navy font-semibold mb-1">
         {heading}
       </p>
-      <p className="text-xs text-slate-600 mb-3">{description}</p>
-      <label className="rvc-btn-secondary cursor-pointer text-center w-full block">
-        <input
-          ref={inputRef}
-          type="file"
-          accept={accept}
-          disabled={busy}
-          className="hidden"
-          onChange={(e) => {
-            upload(e.target.files?.[0]);
-            if (inputRef.current) inputRef.current.value = '';
-          }}
-        />
-        {busy ? 'Reading…' : buttonLabel}
-      </label>
+      <p className="text-sm text-slate-700">
+        {busy ? (
+          <span className="italic">Reading and extracting…</span>
+        ) : (
+          <>
+            <span className="font-medium">{dropHint}</span>
+            <span className="text-slate-500"> or </span>
+            <span className="text-navy underline">{browseLabel}</span>
+            <span className="text-slate-500">.</span>
+          </>
+        )}
+      </p>
+      <input
+        ref={inputRef}
+        type="file"
+        accept={accept}
+        disabled={busy}
+        className="hidden"
+        onChange={(e) => {
+          upload(e.target.files?.[0]);
+          if (inputRef.current) inputRef.current.value = '';
+        }}
+        onClick={(e) => e.stopPropagation()}
+      />
       {status && (
         <p className={`text-xs mt-2 ${status.ok ? 'text-green-700' : 'text-red-700'}`}>
           {status.msg}
