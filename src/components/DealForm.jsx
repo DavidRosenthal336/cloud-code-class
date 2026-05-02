@@ -79,6 +79,10 @@ export default function DealForm({ deal, setDeal, suggestedExitCap }) {
   return (
     <div className="space-y-6">
       <Section title="Property">
+        <DocumentUploadBar
+          kind="om"
+          mergeExtracted={(patch) => setDeal({ ...deal, ...patch })}
+        />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Field label="Property Name">
             <input
@@ -581,7 +585,7 @@ function FinancialsColumn({
         {toggleNode}
       </div>
 
-      {showUpload && <DocumentUploadBar mergeExtracted={mergeExtracted} />}
+      {showUpload && <DocumentUploadBar kind="t12" mergeExtracted={mergeExtracted} />}
 
       <fieldset disabled={disabled} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -649,13 +653,20 @@ function FinancialsColumn({
   );
 }
 
-function DocumentUploadBar({ mergeExtracted }) {
+function DocumentUploadBar({ kind, mergeExtracted }) {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState(null);
-  const t12Ref = useRef(null);
-  const omRef = useRef(null);
+  const inputRef = useRef(null);
 
-  const upload = async (kind, file) => {
+  const accept = kind === 't12' ? '.xlsx,.xls,.csv' : '.pdf';
+  const buttonLabel = kind === 't12' ? 'Upload T12 (Excel)' : 'Upload OM (PDF)';
+  const heading = kind === 't12' ? 'Auto-Fill T12 from Excel' : 'Auto-Fill from OM';
+  const description =
+    kind === 't12'
+      ? 'Drop a T12 operating statement (Excel/CSV). The tool reads it and fills the financial inputs below. Verify everything before relying on it.'
+      : 'Drop an Offering Memorandum (PDF). The tool reads it and fills the property details below. Verify everything before relying on it.';
+
+  const upload = async (file) => {
     if (!file) return;
     setBusy(true);
     setStatus(null);
@@ -670,7 +681,9 @@ function DocumentUploadBar({ mergeExtracted }) {
       const keys = Object.keys(data.fields || {});
       setStatus({
         ok: true,
-        msg: `Extracted ${keys.length} field${keys.length === 1 ? '' : 's'} from your ${kind === 't12' ? 'T12' : 'OM'}.`,
+        msg: `Extracted ${keys.length} field${keys.length === 1 ? '' : 's'} from your ${
+          kind === 't12' ? 'T12' : 'OM'
+        }.`,
       });
     } catch (e) {
       setStatus({ ok: false, msg: e.message });
@@ -682,48 +695,25 @@ function DocumentUploadBar({ mergeExtracted }) {
   return (
     <div className="mb-4 bg-navy-deep/5 border border-navy/20 rounded-md p-3">
       <p className="text-[11px] uppercase tracking-wide text-navy font-semibold mb-2">
-        Auto-Fill from Documents
+        {heading}
       </p>
-      <p className="text-xs text-slate-600 mb-3">
-        Drop a T12 (Excel) and/or an OM (PDF). The tool reads the documents and fills the
-        T12 inputs and property details below. Verify everything before relying on it.
-      </p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        <label className="rvc-btn-secondary cursor-pointer text-center">
-          <input
-            ref={t12Ref}
-            type="file"
-            accept=".xlsx,.xls,.csv"
-            disabled={busy}
-            className="hidden"
-            onChange={(e) => {
-              upload('t12', e.target.files?.[0]);
-              if (t12Ref.current) t12Ref.current.value = '';
-            }}
-          />
-          {busy ? 'Reading…' : 'Upload T12 (Excel)'}
-        </label>
-        <label className="rvc-btn-secondary cursor-pointer text-center">
-          <input
-            ref={omRef}
-            type="file"
-            accept=".pdf"
-            disabled={busy}
-            className="hidden"
-            onChange={(e) => {
-              upload('om', e.target.files?.[0]);
-              if (omRef.current) omRef.current.value = '';
-            }}
-          />
-          {busy ? 'Reading…' : 'Upload OM (PDF)'}
-        </label>
-      </div>
+      <p className="text-xs text-slate-600 mb-3">{description}</p>
+      <label className="rvc-btn-secondary cursor-pointer text-center w-full block">
+        <input
+          ref={inputRef}
+          type="file"
+          accept={accept}
+          disabled={busy}
+          className="hidden"
+          onChange={(e) => {
+            upload(e.target.files?.[0]);
+            if (inputRef.current) inputRef.current.value = '';
+          }}
+        />
+        {busy ? 'Reading…' : buttonLabel}
+      </label>
       {status && (
-        <p
-          className={`text-xs mt-2 ${
-            status.ok ? 'text-green-700' : 'text-red-700'
-          }`}
-        >
+        <p className={`text-xs mt-2 ${status.ok ? 'text-green-700' : 'text-red-700'}`}>
           {status.msg}
         </p>
       )}
